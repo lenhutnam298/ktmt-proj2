@@ -20,7 +20,7 @@
 #	@param	testWord -> $a1
 #	@return 0 if $a0 is the same $a1
 #	@return 1 if $a0 longer than $a1
-#	@return 0 if $a0 shoter than $a1
+#	@return -1 if $a0 shoter than $a1
 _strcmp:
 	addi	$sp, $sp, -8
 	sw	$ra, ($sp)
