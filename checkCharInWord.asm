@@ -47,9 +47,7 @@ _check_in_word.char_cmpr_true:
 	addu	$t3,$zero,1		#found = true
 
 	#TODO update guess word: replace '_' with char
-	
-
-	j	_check_in_word.keep_loop	
+		
 
 _check_in_word.keep_loop:
 	addu	$s0,$s0,1		#word addr++
