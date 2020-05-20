@@ -60,11 +60,11 @@ _check_in_word.end_loop:
 	move	$v0,$t3
 	
 	#restore
-	sw	$ra,($sp)
-	sw	$s0,4($sp)		
-	sw	$t0,8($sp)		
-	sw	$t1,12($sp)		
-	sw	$t2,16($sp)
+	lw	$ra,($sp)
+	lw	$s0,4($sp)		
+	lw	$t0,8($sp)		
+	lw	$t1,12($sp)		
+	lw	$t2,16($sp)
 	addi	$sp,$sp,32
 
 	jr 	$ra	
