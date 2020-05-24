@@ -1,3 +1,4 @@
+# Do tui chua biet minh luu tru sao nen co gi tui sua lai ham randam mang sau
 .data
 	tb0: .asciiz "# Nhap mang: \n"
 	tb1: .asciiz "- Nhap n: "
