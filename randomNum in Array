@@ -1,0 +1,217 @@
+.data
+	tb0: .asciiz "# Nhap mang: \n"
+	tb1: .asciiz "- Nhap n: "
+	tba.1: .asciiz "  + a["
+	tba.2: .asciiz "] = "
+	tb3: .asciiz "# Mang da nhap: "
+	tb4: .asciiz "\n# Phan tu ngau nhien thuoc mang: "
+	n: .word 0
+	ArrayRandomNum: .word 0
+	arr: .space 400
+.text
+
+# Nhap mang ----------------------------------------------------------
+	# TRUYEN THAM SO
+	la $a0,n
+	la $a1,arr
+	# GOI HAM NHAP MANG
+	jal _Nhapmang
+# Xuat mang ----------------------------------------------------------
+
+	# XUAT BANG 3
+	li $v0,4
+	la $a0,tb3
+	syscall	
+	# TRUYEN THAM SO
+	lw $a0,n
+	la $a1,arr
+	# GOI HAM XUAT MANG
+	jal _Xuatmang
+
+# Lay phan tu ngau nhien trong mang ------------------------------------
+	# XUAT BANG 4
+	li $v0,4
+	la $a0,tb4
+	syscall	
+	# TRUYEN THAM SO
+	lw $a0,n
+	la $a1,arr
+	# GOI HAM XUAT MANG
+	jal _RandomNum_in_array
+	# Lay Kq truyen vao 
+	move $a0,$v0
+	# Xuat kq:
+	li $v0,1
+	syscall
+	
+######################################################################
+# -------------------------------- KET THUC -------------------------------- # 
+	li $v0,10
+	syscall
+# --------------------------------------------------------------------------- #
+######################################################################
+# ========================= Nhapmang ========================= #
+_Nhapmang:
+
+# DAU THU TUC:
+
+	addi $sp,$sp,-32
+	sw $ra,($sp)
+	sw $s0,4($sp)	# n
+	sw $s1,8($sp)	# arr
+	sw $t0,12($sp)
+	sw $t1,16($sp)
+
+	# Lay tham so luu vao thanh ghi
+	move $s0,$a0	# n
+	move $s1,$a1	# arr
+
+# THAN THU TUC:
+
+	# Xuat ban tb0
+	li $v0,4
+	la $a0,tb0
+	syscall	
+	# Xuat ban bt 1
+	li $v0,4
+	la $a0,tb1
+	syscall	
+	# Nhap n:
+	li $v0,5
+	syscall 
+	# Luu N vao $s0
+	sw $v0,($s0)
+	# load gia tri n
+	lw $s0,($s0)	
+	# Khoi tao vong lap
+	li $t0,0 #i = 0
+
+_Nhapmang.loop:
+
+	# Xuat bang tba.1
+	li $v0,4
+	la $a0,tba.1
+	syscall	
+	# Xuat gia tri i
+	li $v0,1
+	move $a0,$t0
+	syscall	
+	# Xuat ban tba.2	
+	li $v0,4
+	la $a0,tba.2
+	syscall	
+	# Nhap so nguyen
+	li $v0,5
+	syscall
+	# Luu so nguyen vao $s1
+	sw $v0,($s1)	
+	# Tang:
+	addi $s1,$s1,4	# Tang dia chi
+	addi $t0,$t0,1	# Tang i
+	# Dieu kien lap
+	blt $t0,$s0,_Nhapmang.loop
+
+# CUOI THU TUC:
+
+	# Restore
+	lw $ra,($sp)
+	lw $s0,4($sp)	
+	lw $s1,8($sp)	
+	lw $t0,12($sp)
+	lw $t1,16($sp)
+	# Xoa Stack
+	addi $sp,$sp,32
+	# Tra ve
+	jr $ra
+
+# ========================= Xuatmang ========================= #
+_Xuatmang: 
+# DAU THU TUC:
+	addi $sp,$sp,-32
+	sw $ra,($sp)
+	sw $s0,4($sp)	# n
+	sw $s1,8($sp)	# arr
+	sw $t0,12($sp)	# i
+	sw $t1,16($sp)
+
+	#Lay tham so luu vao thanh ghi
+	move $s0,$a0	# n
+	move $s1,$a1	# arr
+
+# THAN THU TUC:
+	# Khoi tao vong lap
+	li $t0,0 #i = 0
+_Xuatmang.loop:
+
+	# Xuat array[i]
+	li $v0,1
+	lw $a0,($s1)
+	syscall
+	# Xuat khoang trang
+	li $v0,11
+	li $a0,' '
+	syscall
+	# T?NG
+	addi $s1,$s1,4	# Tang dia chi
+	addi $t0,$t0,1	# Tang i
+	# Dieu kien lap
+	blt $t0,$s0,_Xuatmang.loop
+
+# CUOI THU TUC:
+	# Restore
+	lw $ra,($sp)
+	lw $s0,4($sp)	
+	lw $s1,8($sp)	
+	lw $t0,12($sp)
+	lw $t1,16($sp)
+	# Xoa stack
+	addi $sp,$sp,32
+	# Tra ve
+	jr $ra
+# ========================= _RandomNum_in_array: ========================= #
+_RandomNum_in_array:
+# DAU THU TUC:
+
+	addi $sp,$sp,-32
+	sw $ra,($sp)
+	sw $s0,4($sp)	# n
+	sw $s1,8($sp)	# arr
+	sw $t0,12($sp)	# so byte can phai tang
+	sw $t1,16($sp)	# random i of array
+	sw $t2,20($sp)	# 4 byte 
+	#Lay tham so luu vao thanh ghi
+	move $s0,$a0	# n
+	move $s1,$a1	# arr
+	#Khoi tao:
+	li $t2,4
+
+# THAN THU TUC:
+	
+	# Ham goi random cua he thong
+	li $v0,42
+	move $a1,$s0
+	syscall
+	# Gan $t1 = kq random
+	add $t1,$zero,$a0
+	# So byte can tang
+	mult $t1,$t2
+	mflo $t0
+	# Tang dia chi
+	add $s1,$s1,$t0
+	lw $v0,($s1)
+
+# CUOI THU TUC:
+
+	# Restore
+	lw $ra,($sp)
+	lw $s0,4($sp)	# n
+	lw $s1,8($sp)	# arr
+	lw $t0,12($sp)	# so byte can phai tang
+	lw $t1,16($sp)	# random i of array
+	lw $t2,20($sp)	# 4 byte 
+	# Xoa stack
+	addi $sp,$sp,32
+	# Tra ve
+	jr $ra
+
+	
