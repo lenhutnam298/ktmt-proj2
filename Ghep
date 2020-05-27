@@ -1,0 +1,261 @@
+.data
+	# test case
+	test:	.asciiz "apple"
+	# Ve bang
+	tb0: .asciiz "\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+	tb01: .asciiz "\n\n\n"
+	tb1: .asciiz "\n\nNhap n: "
+	tb2: .asciiz "  ______"
+	tb3: .asciiz "\n  |  |"
+	tb4: .asciiz "\n  |"
+	tb5: .asciiz "\n__|______"
+	tb6: .asciiz "\n  |  o"
+	tb7: .asciiz "\n  |  |"
+	tb8: .asciiz "\n  | /|"
+	tb9: .asciiz "\n  | /|\\"
+	tb10: .asciiz "\n  | /"
+	tb11: .asciiz "\n  | / \\"
+	tb12: .asciiz "\n\n GAME OVER "
+	# Bang thong bao:
+	promt1: .asciiz "Nhap ki tu: "
+	
+	str:	.space	50
+
+.text 
+	# Truyen tham so
+	la $a0, test
+	# Goi ham ve\
+	jal _Hangman
+
+	# Ket thuc 
+	li	$v0,10
+	syscall
+
+# == bool checkInWord(word, input char)---------------------------------------------
+_check_in_word:
+	addi	$sp,$sp,-32
+	sw	$ra,($sp)
+	sw	$s0,4($sp)		#word
+	sw	$t0,8($sp)		#input char
+	sw	$t1,12($sp)		#cur char
+	sw	$t2,16($sp)		#cur char index
+	sw	$t3,20($sp)		#found?
+
+	#init	
+	move	$s0,$a0			#word
+	move	$t0,$a1			#input char
+	addu	$t2,$t2,0		#i = 0
+	addu	$t3,$zero,0		#found = false
+
+_check_in_word.loop:
+	lbu	$t1,($s0)
+	beq	$t1,'\0',_check_in_word.end_loop
+	beq	$t1,$t0,_check_in_word.char_cmpr_true	#curChar == inputChar
+	j	_check_in_word.keep_loop		#curChar != inputChar
+
+_check_in_word.char_cmpr_true:
+	#Correct char
+	addu	$t3,$zero,1		#found = true
+
+	#TODO update guess word: replace '_' with char
+		
+
+_check_in_word.keep_loop:
+	addu	$s0,$s0,1		#word addr++
+	addu	$t2,$t2,1		#i++
+
+	j	_check_in_word.loop
+
+_check_in_word.end_loop:
+	#return found? flag
+	move	$v0,$t3
+	
+	#restore
+	lw	$ra,($sp)
+	lw	$s0,4($sp)		
+	lw	$t0,8($sp)		
+	lw	$t1,12($sp)		
+	lw	$t2,16($sp)
+	addi	$sp,$sp,32
+
+	jr 	$ra	
+# == bool Hangman(bool)---------------------------------------------
+#======= Ve hangman ======
+#dau thu tuc
+_Hangman:
+	addi $sp,$sp,-32
+	sw $ra,($sp)
+	sw $s0,4($sp) 	# word
+	sw $t0,8($sp) 	# i
+	sw $t1,12($sp)	# temp
+	sw $t2,16($sp)	# kq nhap
+	#Lay tham so luu vao thanh ghi
+	move $s0, $a0
+
+	#Khoi tap vong lap
+	li $t0, 0 #$t0 = 0
+	
+#than thu tuc
+_Hangman.Lap:
+	li $v0, 4
+	la $a0, tb0
+	syscall
+
+	li $v0, 4
+	la $a0, tb2
+	syscall
+
+	li $v0, 4
+	la $a0, tb3
+	syscall
+	
+	# if i < 1 
+	slti $t1,$t0,1
+	beq $t1,1,VeCot1
+	li $v0, 4
+	la $a0, tb6 #Ve dau
+	syscall
+	j Ve2
+
+VeCot1:
+	li $v0, 4
+	la $a0, tb4
+	syscall
+	j Ve2
+
+Ve2:
+	#if i < 2 
+	slti $t1,$t0,2
+	beq $t1,1,VeCot2
+	slti $t1,$t0,3
+	beq $t1,1,VeThan
+	slti $t1,$t0,4
+	beq $t1,1,VeTayTrai
+	li $v0, 4
+	la $a0, tb9 #Ve tay phai
+	syscall
+	j Ve3
+
+VeCot2:
+	li $v0, 4
+	la $a0, tb4
+	syscall
+	j Ve3
+
+VeThan:
+	li $v0, 4
+	la $a0, tb7
+	syscall
+	j Ve3
+
+VeTayTrai:
+	li $v0, 4
+	la $a0, tb8
+	syscall
+	j Ve3
+
+Ve3:
+	#if i < 5
+	slti $t1,$t0,5
+	beq $t1,1,VeCot3
+	slti $t1,$t0,6
+	beq $t1,1,VeChanTrai
+	li $v0, 4
+	la $a0, tb11 #Ve Chan phai
+	syscall
+	j Ve4
+
+VeCot3:
+	li $v0, 4
+	la $a0, tb4
+	syscall
+	j Ve4
+
+VeChanTrai:
+	li $v0, 4
+	la $a0, tb10
+	syscall
+	j Ve4
+
+Ve4:
+	li $v0, 4
+	la $a0, tb5
+	syscall
+
+	slti $t1,$t0,6
+	beq $t1,0,KetThuc
+	li $v0, 4
+	la $a0, tb01
+	syscall
+
+	# Tuyen tham so
+	move $a0,$s0
+	# Goi ham nhap
+	jal _ScanChar
+
+	#Kiem tra kq tra ve = 1
+	beq $v0,1,_Hangman.Lap
+	
+	#i = i + 1
+	addi $t0,$t0,1
+
+	#Kiem tra i < 6
+	slti $t1,$t0,7
+	beq $t1,1,_Hangman.Lap
+
+#Cuoi thu tuc
+KetThuc:
+	li $v0, 4
+	la $a0, tb01
+	syscall
+
+	#In ra ket thuc game
+	li $v0,4
+	la $a0, tb12
+	syscall
+
+	#Restore
+	lw $ra,($sp)
+	lw $s0, 4($sp) #n
+	lw $t0, 8($sp)
+	lw $t1, 12($sp)
+
+	addi $sp,$sp,32
+	jr $ra
+# == ScanChar(word) -------------------------------------------------
+_ScanChar:
+# DAU THU TUC:
+	
+	# Back up
+	addi $sp,$sp,-32
+	sw $ra,($sp)
+	sw $s0,4($sp) # word
+	sw $t0,8($sp) 
+	
+	# Truyen tham so
+	move $s0,$a0
+# THAN THU TUC:
+	
+	li $v0,4
+	la $a0,promt1
+	syscall
+
+	# Nhap ki tu
+	li $v0,12
+	syscall
+	
+	# Gan vao bien 
+	move $a1,$v0
+	move $a0,$s0
+
+	# Goi ham 
+	jal _check_in_word
+
+# CUOI THU TUC:
+	
+	# Load back up
+	lw $ra,($sp)
+	lw $s0,4($sp) # word
+	lw $t0,8($sp) 
+	addi $sp,$sp,32
+	jr $ra
