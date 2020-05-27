@@ -215,4 +215,240 @@ _RandomNum_in_array:
 	# Tra ve
 	jr $ra
 
+## (CODE RANDOM TRONG MANG STRING):
+## - code luu mang string do tui lam khong chac dung nhung chay duoc
+.data
+
+	tb0: .asciiz "- Nhap mang: "
+	tb0_1: .asciiz "\n  + Nhap n: "
+	tb0_2: .asciiz "  + Nhap string:\n"
+	tb0_2_1: .asciiz "      Array["
+ 	tb0_2_2: .asciiz "] = "
+	tb1: .asciiz "- Mang string da nhap: "
+	n: .word 0
+	array: .space 400
+	temp: .space 2000
+	wordStr: .space 20
+.text
+# NHAP MANG ----------------------------------------------------------
 	
+	# Truyen tham so
+	la $a0, n
+	la $a1, array
+	# Goi ham nhap mang
+	jal _ScanStrArr
+
+# XUAT MANG ----------------------------------------------------------
+	
+	# Xuat bang 1:
+	li $v0, 4
+	la $a0, tb1
+	syscall
+	# Truyen tham so:
+	la $a0, n
+	la $a1, array
+	# Goi ham nhap mang
+	jal _PrintStrArr
+# ----------------------------------------------------------
+# TRUYEN THAM SO
+	lw $a0,n
+	la $a1,array
+	# GOI HAM XUAT MANG
+	jal _RandomNum_in_array
+	# Lay Kq truyen vao 
+	move $a0,$v0
+	# Xuat kq:
+	li $v0,4
+	syscall
+######################################################################
+# -------------------------------- KET THUC -------------------------------- # 
+	li $v0,10
+	syscall
+# --------------------------------------------------------------------------- #
+######################################################################
+
+# ========================= _ScanStrArr ========================= #
+_ScanStrArr:
+# DAU THU TUC:
+	
+	addi $sp, $sp, -32
+	sw $ra,($sp)
+	sw $s0,4($sp) # n
+	sw $s1,8($sp) # array
+	sw $s2,12($sp)
+	sw $t0,16($sp) # dem i
+	sw $t1,20($sp) 
+	# Lay tham so luu vao thanh ghi
+	move $s0,$a0	# n
+	move $s1,$a1	# arr
+	
+# THAN THU TUC:
+	
+	# Xuat bang tb0:
+	li $v0, 4
+	la $a0, tb0
+	syscall
+	# Xuat bang tb0_1:
+	li $v0, 4
+	la $a0, tb0_1
+	syscall
+
+	# Nhap n:
+	li $v0,5
+	syscall
+	# Luu n vao $s0
+	sw $v0,($s0)
+	# Load n
+	lw $s0,($s0)
+
+	# Xuat bang tb0_2:
+	li $v0, 4
+	la $a0, tb0_2
+	syscall
+	# Khoi tao vong lap
+	li $t0,0 #i = 0 
+ 	la $s2,temp
+_ScanStrArr.loop:
+	# Xuat bang tb0_2-1:
+	li $v0, 4
+	la $a0, tb0_2_1
+	syscall
+	# Xuat i
+	li $v0,1
+	move $a0,$t0
+	syscall	
+	# Xuat bang tb0_2-2:
+	li $v0, 4
+	la $a0, tb0_2_2
+	syscall
+	# Nhap string:
+	move $a0,$s2
+	li $v0,8
+	syscall
+	# Luu vao mang:
+ 	sw $a0,($s1)
+	#Tang:
+	addi $s1,$s1,20	# Tang dia chi
+	addi $t0,$t0,1	# Tang i
+	addi $s2,$s2,20
+	# Dieu kien lap
+	blt $t0,$s0,_ScanStrArr.loop
+
+# CUOI THU TUC:
+
+	# Restore
+	lw $ra,($sp)
+	lw $s0,4($sp)	
+	lw $s1,8($sp)	
+	lw $s2,12($sp)
+	lw $t0,16($sp) # dem i
+	lw $t1,20($sp) 
+	# Xoa Stack
+	addi $sp,$sp,32
+	# Tra ve
+	jr $ra
+
+# ========================= _ScanStrArr ========================= #
+_PrintStrArr:
+# DAU THU TUC:
+	
+	addi $sp, $sp, -32
+	sw $ra,($sp)
+	sw $s0,4($sp) # n
+	sw $s1,8($sp) # array
+	sw $t0,12($sp) # dem i
+	# Lay tham so luu vao thanh ghi
+	move $s0,$a0	# n
+	move $s1,$a1	# arr
+
+# THAN THU TUC:
+	
+	# Khoi tao vong lap
+	li $t0,0 #i = 0
+	lw $s0,($s0)
+	
+	# Xuat '\n'
+	li $v0,11
+	li $a0,'\n'
+	syscall
+_PrintStrArr.loop:
+	# Xuat array[i]
+	li $v0,4
+	lw $a0,($s1)
+	syscall
+	# Xuat '\n'
+	li $v0,11
+	li $a0,'\n'
+	syscall
+	# Tang
+	addi $s1,$s1,20	# Tang dia chi
+	addi $t0,$t0,1	# Tang i
+	# Dieu kien lap
+	blt $t0,$s0,_PrintStrArr.loop
+
+# CUOI THU TUC:
+	# Restore
+	lw $ra,($sp)
+	lw $s0,4($sp)	
+	lw $s1,8($sp)	
+	lw $t0,12($sp)
+	# Xoa stack
+	addi $sp,$sp,32
+	# Tra ve
+	jr $ra
+
+_RandomNum_in_array:
+# DAU THU TUC:
+
+	addi $sp,$sp,-32
+	sw $ra,($sp)
+	sw $s0,4($sp)	# n
+	sw $s1,8($sp)	# arr
+	sw $t0,12($sp)	# so byte can phai tang
+	sw $t1,16($sp)	# random i of array
+	sw $t2,20($sp)	# 20 byte 
+	#Lay tham so luu vao thanh ghi
+	move $s0,$a0	# n
+	move $s1,$a1	# arr
+	#Khoi tao:
+	li $t2,20
+
+# THAN THU TUC:
+	
+	# Ham goi random cua he thong
+	li $v0,42
+	move $a1,$s0
+	syscall
+	# Gan $t1 = kq random
+	add $t1,$zero,$a0
+	# So byte can tang
+	mult $t1,$t2
+	mflo $t0
+	# Tang dia chi
+	add $s1,$s1,$t0
+	lw $v0,($s1)
+
+# CUOI THU TUC:
+
+	# Restore
+	lw $ra,($sp)
+	lw $s0,4($sp)	# n
+	lw $s1,8($sp)	# arr
+	lw $t0,12($sp)	# so byte can phai tang
+	lw $t1,16($sp)	# random i of array
+	lw $t2,20($sp)	# 4 byte 
+	# Xoa stack
+	addi $sp,$sp,32
+	# Tra ve
+	jr $ra
+
+
+
+
+
+
+
+
+
+
+
