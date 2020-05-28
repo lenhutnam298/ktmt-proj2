@@ -1,0 +1,659 @@
+.data
+	
+	
+	# test case.
+	test:	.asciiz "apple"
+	# ki tu:
+	space: .byte '_'
+	endline: .byte '\0'
+	# Ve bang
+	tb0: .asciiz "\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+	tb01: .asciiz "\n\n\n"
+	tb1: .asciiz "\n\nNhap n: "
+	tb2: .asciiz "  ______"
+	tb3: .asciiz "\n  |  |"
+	tb4: .asciiz "\n  |"
+	tb5: .asciiz "\n__|______"
+	tb6: .asciiz "\n  |  o"
+	tb7: .asciiz "\n  |  |"
+	tb8: .asciiz "\n  | /|"
+	tb9: .asciiz "\n  | /|\\"
+	tb10: .asciiz "\n  | /"
+	tb11: .asciiz "\n  | / \\"
+	tb12: .asciiz "\n\n GAME OVER "
+	# Bang thong bao:
+	promt_ScanChar: .asciiz "Nhap ki tu: "
+	promt_ScanWord: .asciiz "Nhap chu: "
+	promt_guessing1: .asciiz "Nhap cach doan tu: "
+	
+
+	#
+	n: .byte 2
+	str:	.space	50
+	guessword: .space 50
+
+.text 
+	
+	la	$a0,test
+	la	$a1,guessword
+	jal 	_generate_guessword	
+	
+	
+	la	$a0,guessword
+	jal 	_printGuessword
+
+	la $a0,test
+	jal _guessing
+
+	la	$a0,guessword
+	jal 	_printGuessword
+	
+	# Ket Thuc
+	j StopRuning
+
+# == bool checkInWord(word, input char)---------------------------------------------
+_check_in_word:
+	addi	$sp,$sp,-32
+	sw	$ra,($sp)
+	sw	$s0,4($sp)		#word
+	sw	$t0,8($sp)		#input char
+	sw	$t1,12($sp)		#cur char
+	sw	$t2,16($sp)		#cur char index
+	sw	$t3,20($sp)		#found?
+
+	#init	
+	move	$s0,$a0			#word
+	move	$t0,$a1			#input char
+	addu	$t2,$t2,0		#i = 0
+	addu	$t3,$zero,0		#found = false
+
+_check_in_word.loop:
+	lbu	$t1,($s0)
+	beq	$t1,'\0',_check_in_word.end_loop
+	beq	$t1,$t0,_check_in_word.char_cmpr_true	#curChar == inputChar
+	j	_check_in_word.keep_loop		#curChar != inputChar
+
+_check_in_word.char_cmpr_true:
+	#Correct char
+	addu	$t3,$zero,1		#found = true
+
+	#TODO update guess word: replace '_' with char
+		
+
+_check_in_word.keep_loop:
+	addu	$s0,$s0,1		#word addr++
+	addu	$t2,$t2,1		#i++
+
+	j	_check_in_word.loop
+
+_check_in_word.end_loop:
+	#return found? flag
+	move	$v0,$t3
+	
+	#restore
+	lw	$ra,($sp)
+	lw	$s0,4($sp)		
+	lw	$t0,8($sp)		
+	lw	$t1,12($sp)		
+	lw	$t2,16($sp)
+	addi	$sp,$sp,32
+
+	jr 	$ra	
+# == bool Hangman(bool)---------------------------------------------
+#======= Ve hangman ======
+#dau thu tuc
+_Hangman:
+	addi 	$sp,$sp,-32
+	sw 	$ra,($sp)
+	sw 	$s0,4($sp) 	# word
+	sw 	$t0,8($sp) 	# i
+	sw	$t1,12($sp)	# temp
+	sw 	$t2,16($sp)	# kq nhap
+	#Lay tham so luu vao thanh ghi
+	move 	$s0, $a0
+
+	#Khoi tap vong lap
+	li 	$t0, 0 #$t0 = 0
+	
+#than thu tuc
+_Hangman.Lap:
+	li 	$v0, 4
+	la 	$a0, tb0
+	syscall
+
+	li 	$v0, 4
+	la 	$a0, tb2
+	syscall
+
+	li 	$v0, 4
+	la 	$a0, tb3
+	syscall
+	
+	# if i < 1 
+	slti 	$t1,$t0,1
+	beq 	$t1,1,VeCot1
+	li 	$v0, 4
+	la 	$a0, tb6 #Ve dau
+	syscall
+	j Ve2
+
+VeCot1:
+	li 	$v0, 4
+	la 	$a0, tb4
+	syscall
+	j Ve2
+
+Ve2:
+	#if i < 2 
+	slti 	$t1,$t0,2
+	beq 	$t1,1,VeCot2
+	slti 	$t1,$t0,3
+	beq 	$t1,1,VeThan
+	slti 	$t1,$t0,4
+	beq 	$t1,1,VeTayTrai
+	li 	$v0, 4
+	la 	$a0, tb9 #Ve tay phai
+	syscall
+	j Ve3
+
+VeCot2:
+	li 	$v0, 4
+	la 	$a0, tb4
+	syscall
+	j Ve3
+
+VeThan:
+	li 	$v0, 4
+	la 	$a0, tb7
+	syscall
+	j Ve3
+
+VeTayTrai:
+	li 	$v0, 4
+	la 	$a0, tb8
+	syscall
+	j Ve3
+
+Ve3:
+	#if i < 5
+	slti 	$t1,$t0,5
+	beq 	$t1,1,VeCot3
+	slti 	$t1,$t0,6
+	beq 	$t1,1,VeChanTrai
+	li 	$v0, 4
+	la 	$a0, tb11 #Ve Chan phai
+	syscall
+	j Ve4
+
+VeCot3:
+	li 	$v0, 4
+	la 	$a0, tb4
+	syscall
+	j Ve4
+
+VeChanTrai:
+	li 	$v0, 4
+	la 	$a0, tb10
+	syscall
+	j Ve4
+
+Ve4:
+	li 	$v0, 4
+	la 	$a0, tb5
+	syscall
+
+	slti 	$t1,$t0,6
+	beq 	$t1,0,KetThuc
+	li 	$v0, 4
+	la 	$a0, tb01
+	syscall
+
+	# Tuyen tham so
+	move 	$a0,$s0
+	# Goi ham nhap
+	jal _ScanChar
+
+	#Kiem tra kq tra ve = 1
+	beq 	$v0,1,_Hangman.Lap
+	
+	#i = i + 1
+	addi 	$t0,$t0,1
+
+	#Kiem tra i < 6
+	slti 	$t1,$t0,7
+	beq 	$t1,1,_Hangman.Lap
+
+#Cuoi thu tuc
+KetThuc:
+	li 	$v0, 4
+	la 	$a0, tb01
+	syscall
+
+	#In ra ket thuc game
+	li 	$v0,4
+	la 	$a0, tb12
+	syscall
+
+	#Restore
+	lw 	$ra,($sp)
+	lw 	$s0, 4($sp) #n
+	lw 	$t0, 8($sp)
+	lw 	$t1, 12($sp)
+
+	addi 	$sp,$sp,32
+	jr 	$ra
+# == boolean _check_word_with_word(inputWord, testWord) -------------------------------------------------
+#	@param	inputWord -> $a0
+#	@param	testWord -> $a1
+#	@return 0 if $a0 is the same $a1
+#	@return 1 if $a0 longer than $a1
+#	@return -1 if $a0 shorter than $a1
+_strcmp:
+	addi	$sp,$sp,-8
+	sw	$ra,($sp)
+	sw	$s0,4($sp)	# inputWord
+	sw	$s1,8($sp)	# testWord
+
+	move	$s0, $a0
+	move	$s1, $a1
+_strcmp.Loop:
+	lb 	$t0, 0($s0)
+	lb 	$t1, 0($s1)
+	bne 	$t0, $t1, _strcmp_ne
+	# $t0 == $t1:
+	bne 	$t0, $zero, _strcmp.equal.continue
+	# $t0 == $t1 == '\0':
+	move 	$v0, $zero
+	jr 	$ra
+_strcmp.equal.continue:
+	# $t0 == $t1 != '\0':
+	addi 	$s0, $s0, 1
+	addi 	$s1, $s1, 1
+	j 	_strcmp.Loop
+_strcmp.return_equal:
+	addi 	$v0, $zero, 0
+	lw	$ra,($sp)
+	lw	$s0,4($sp)	# inputWord
+	lw	$s1,8($sp)	# testWord
+	addi	$sp,$sp,8
+	jr 	$ra
+_strcmp.return_shorter:
+	addi 	$v0, $zero, -1
+	lw	$ra,($sp)
+	lw	$s0,4($sp)	# inputWord
+	lw	$s1,8($sp)	# testWord
+	addi	$sp,$sp,8
+	jr 	$ra
+_strcmp.return_longer:
+	addi 	$v0, $zero, 1
+	lw	$ra,($sp)
+	lw	$s0,4($sp)	# inputWord
+	lw	$s1,8($sp)	# testWord
+	addi	$sp,$sp,8
+	jr 	$ra		
+_strcmp_ne:
+	# $t0 != $t1:
+	sub 	$v0, $t0, $t1
+	beq	$v0, 0, _strcmp.return_equal
+	slt	$t2, $v0, $zero
+	beq	$t2, 1, _strcmp.return_longer	
+	beq	$t2, 0, _strcmp.return_shorter
+# == int _strlen -------------------------------------------------
+#	@param: string input -> $a0
+#	@return the length of string -> $v0
+_strlen:
+	addi	$sp, $sp, -8
+	sw	$ra, ($sp)
+	sw	$s0, 4($sp)	# inputWord	
+	sw	$t0, 8($sp)	# count
+	
+	# initialization
+	move 	$s0, $a0	# inputWord
+	addi 	$t0, $zero, 0
+	
+_strlen.Loop:
+	addi 	$s0, $s0, 1
+	addi 	$t0, $t0, 1
+_strlen.test:
+	lb 	$t1, 0($s0)
+	bnez 	$t1,_strlen.Loop
+	move 	$v0, $t0
+
+	lw	$ra, ($sp)
+	lw	$s0, 4($sp)		
+	lw	$t0, 8($sp)	
+	addi	$sp, $sp, 8
+	jr 	$ra
+
+# == ScanChar(word) -------------------------------------------------
+#	@param	inputWord -> $a0
+#	@return 0 if input char is not in inputWord
+#	@return 1 input char is in inputWord
+_ScanChar:
+# DAU THU TUC:
+	
+	# Back up
+	addi 	$sp,$sp,-16
+	sw	$t9,0($sp)	#throw
+	sw 	$ra,4($sp)
+	sw 	$s0,8($sp) 	# word
+	sw 	$t0,12($sp) 
+	sw	$t1,16($sp)	# result
+	
+	# Truyen tham so
+	move 	$s0,$a0
+# THAN THU TUC:
+	
+	li 	$v0,4
+	la 	$a0,promt_ScanChar
+	syscall
+
+	# Nhap ki tu
+	li 	$v0,12
+	syscall
+	
+	move 	$t0,$v0
+	# Gan vao bien 
+	move 	$a0,$t0
+	la	$a1,guessword
+	# kiem tra exist
+	jal 	_check_exist
+	beq 	$v0,1,_ScanChar.existed
+
+	# Gan vao bien 
+	move 	$a1,$t0
+	move 	$a0,$s0
+	# Goi ham 
+	jal 	_check_in_word
+	move 	$t1,$v0
+	# Gan vao bien 
+	la 	$a0,guessword
+	move 	$a1,$t0
+	move 	$a2,$s0
+	
+	jal 	update_guessword
+_ScanChar.existed:
+	addi 	$t1,$zero,0
+	
+_ScanChar.exit:
+# CUOI THU TUC:
+	move 	$v0,$t1
+	# Load back up
+	lw	$t9,0($sp)	#throw
+	lw 	$ra,4($sp)
+	lw 	$s0,8($sp) 	# word
+	lw 	$t0,12($sp) 
+	lw	$t1,16($sp)	# result
+	addi 	$sp,$sp,16
+	jr 	$ra
+
+# == ScanWord(word) -------------------------------------------------
+#	@param: string input -> $a0
+#	@return 0 if input word <> word
+#	@return 1 if input word = word
+_ScanWord:
+# DAU THU TUC:
+	#Back up:
+	addi	$sp,$sp,-8
+	sw 	$s0,0($sp) 	# word
+	sw	$ra,4($sp)
+	sw 	$s1,8($sp) 	# inputword
+	# Luu lai gia tri tham so vao thanh ghi
+	move 	$s0,$a0
+# THAN THU TUC:
+	# Xuat ban promt_ScanWord
+	li 	$v0,4
+	la 	$a0,promt_ScanWord
+	syscall
+		
+	# Nhap word(input word)
+	li 	$v0,8
+	syscall
+	
+	move 	$s1,$a0
+
+	# Truyen tham so
+	move 	$a0,$s1 #--> xoa neu xoa dong 354
+	move 	$a1,$s0
+	
+	# Goi ham kt Word voi Word
+	jal 	_strcmp
+	
+	# Lay kq
+	beq 	$v0,0,_ScanWord.correct
+_ScanWord.false:
+	addi 	$v0,$zero,0
+	j	_ScanWord.exit
+_ScanWord.correct:
+	addi 	$v0,$zero,1
+_ScanWord.exit:
+
+# CUOI THU TUC:
+	# Restore
+	lw 	$s0,0($sp) 	# word
+	lw	$ra,4($sp)
+	lw 	$s1,8($sp) 	# inputword
+	addi 	$sp,$sp,8
+	
+	jr 	$ra
+# == Scan(How_to_scan,word) -------------------------------------------------
+#	@param: int input -> $a0
+#		$a0 = 1 -> ScanChar
+#		$a0 = 2 -> Scanword
+#	@param: string input -> $a1
+#	@return 0 if input word <> word
+#	@return 1 if input word = word
+_Scan:
+# DAU THU TUC:
+	# Restore
+	addi 	$sp,$sp,-8
+	sw 	$s0,0($sp)	# Cach nhap
+	sw 	$ra,4($sp)
+	sw 	$s1,8($sp)	# word
+	# Luu gia tri tham so vao thanh ghi
+	move 	$s0,$a0
+	move 	$s1,$a1
+# THAN THU TUC:
+	# Truyen bien
+	move $a0,$s1
+	# kt va chon cach nhap
+	addi $v0,$zero,-1
+	beq $s0,1,_Scan.SChar
+	beq $s0,2,_Scan.SWord
+_Scan.SChar:
+	jal _ScanChar
+	j _Scan.exit
+_Scan.SWord:
+	jal _ScanWord
+# CUOI THU TUC
+_Scan.exit:
+	lw 	$s0,0($sp)	# Cach nhap nhap
+	lw 	$ra,4($sp)
+	lw 	$s1,8($sp)	# word
+	addi 	$sp,$sp,8
+	jr $ra
+# == void generate_guessword(word,guessword) ------------------------------------
+#	@param: string input -> $a0
+#	@param: string input -> $a1
+#	== create guess word: _______
+# DAU THU TUC:
+_generate_guessword:
+	addi 	$sp,$sp,-20
+	sw 	$s0,0($sp)	# word
+	sw 	$ra,4($sp)
+	sw 	$s1,8($sp)	# guessword
+	sw	$t0,12($sp)	# word.length
+	sw	$t1,16($sp)	# count i
+	sw	$t2,20($sp)	# '_'
+	
+	jal 	_strlen
+	move 	$t0,$v0
+
+	move	$s1,$a1
+	addi	$t1,$zero,0
+	la 	$t2,space
+# THAN THUC TUC:
+generate_guessword.loop:
+	sb	$t2,($s1)
+	addi 	$t1,$t1,1
+	addi	$s1,$s1,1
+	blt 	$t1,$t0,generate_guessword.loop
+	
+	la 	$t2,endline
+	sb	$t2,($s1)
+# CUOI THU TUC:
+
+	lw 	$s0,0($sp)	# word
+	lw 	$ra,4($sp)
+	lw 	$s1,8($sp)	# guessword
+	lw	$t0,12($sp)	# word.length
+	lw	$t1,16($sp)	# count i
+	lw	$t2,20($sp)	# '_'
+	addi 	$sp,$sp,20
+
+	jr 	$ra
+# ==	void printGuessword(guessword) -----------------------------------
+# DAU THU TUC:
+_printGuessword:
+	addi 	$sp,$sp,-12
+	sw 	$ra,0($sp)
+	sw 	$s0,4($sp)	# guess word
+	sw 	$t0,8($sp)
+	move 	$s0,$a0
+# THAN THUC TUC:
+_printGuessword.loop:
+	lb 	$t0,($s0)
+	beq 	$t0,'\0',_printGuessword.exit
+	move 	$a0,$t0
+	li 	$v0,11
+	syscall
+	addi 	$s0,$s0,1
+	j 	_printGuessword.loop
+_printGuessword.exit:
+# CUOI THU TUC:
+	lw 	$ra,0($sp)
+	lw 	$s0,4($sp)	# guess word
+	lw 	$t0,8($sp)
+	jr 	$ra
+# == void update_guessword(guessword,char,word) ---------------------------------------
+update_guessword:
+# DAU THU TUC:
+	addi	$sp,$sp,-16
+	sw	$ra,0($sp)
+	sw	$s0,4($sp)	# guessword
+	sw	$s1,8($sp)	# char
+	sw	$s2,12($sp)	# word
+	sw	$t2,16($sp)	# word
+	
+	move	$s0,$a0
+	move	$s1,$a1
+	move	$s2,$a2
+
+# THAN THUC TUC:
+update_guessword.loop:
+	lb	$t2,0($s2)
+	bne	$t2,$s1,update_guessword.loop.inc
+	sb	$t2,($s0)
+update_guessword.loop.inc:	
+	addi	$s0,$s0,1
+	addi	$s2,$s2,1
+	beq	$t2,'\0',update_guessword.exit
+	j update_guessword.loop
+update_guessword.exit:
+# CUOI THU TUC:
+	lw	$ra,0($sp)
+	lw	$s0,4($sp)	# guessword
+	lw	$s1,8($sp)	# char
+	lw	$s2,12($sp)	# word
+	lw	$t2,16($sp)	# word
+	addi	$sp,$sp,16
+	
+	jr	$ra
+
+# == _Check_exist(char,guessword) -----------------------------------------------
+
+#	return 1 ->exist
+#	return 0 ->not exist
+_check_exist:
+# DAU THU TUC:
+	addi 	$sp,$sp,-12
+	sw 	$t9,($sp)	#throw
+	sw	$ra,4($sp)	
+	sw	$s0,8($sp)	# char
+	sw	$s1,12($sp)	# Guessword
+	
+	move 	$s0,$a0
+	move 	$s1,$a1
+	
+# THAN THUC TUC:
+	move 	$a0,$s1
+	move	$a1,$s0
+	jal	_check_in_word
+# CUOI THU TUC:
+	lw 	$t9,($sp)	#throw
+	lw	$ra,4($sp)	
+	lw	$s0,8($sp)	# char
+	lw	$s1,12($sp)	# 
+	addi 	$sp,$sp,12
+
+	jr $ra
+
+# == Guessing(str word) -------------------------------------------------
+_guessing:
+# DAU THU TUC:
+	addi 	$sp,$sp,-12
+	sw 	$t9,($sp)	#throw
+	sw	$ra,4($sp)	
+	sw	$s0,8($sp)	# word
+	sw	$s1,12($sp)	# guessing way: 1_char; 2_word
+	
+	move	$s0,$a0
+# THAN THUC TUC:
+	li 	$v0,4
+	la 	$a0,promt_guessing1
+	syscall
+
+	li	$v0,5
+	syscall
+	
+	move	$a0,$v0
+	move	$a1,$s0
+	
+	jal _Scan
+	
+# CUOI THU TUC:
+	lw 	$t9,($sp)	#throw
+	lw	$ra,4($sp)	
+	lw	$s0,8($sp)	# word
+	lw	$s1,12($sp)	# guessing way: 1_char; 2_word
+	addi 	$sp,$sp,12
+
+	jr $ra
+# == StopRuning -------------------------------------------------
+StopRuning:
+	# Ket thuc 
+	li	$v0,10
+	syscall
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
