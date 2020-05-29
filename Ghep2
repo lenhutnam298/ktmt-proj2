@@ -1,6 +1,4 @@
 .data
-	
-	
 	# test case.
 	test:	.asciiz "apple"
 	# ki tu:
@@ -32,8 +30,9 @@
 	n: .byte 2
 	str:	.space	50
 	guessword: .space 50
-
+	inputstr: .space 50
 .text 
+	
 	
 	la	$a0,test
 	la	$a1,guessword
@@ -343,6 +342,41 @@ _strlen.test:
 	lw	$t0, 8($sp)	
 	addi	$sp, $sp, 8
 	jr 	$ra
+# == void  _strcopy(str source, str copy) -------------------------------------------------
+
+_strcopy:
+# DAU THU TUC:
+
+	addi	$sp,$sp,-16
+	sw	$t9,0($sp)	# throw
+	sw	$ra,4($sp)
+	sw	$s0,8($sp)	# source
+	sw	$s1,12($sp)	# copy
+	sw	$t0,16($sp)	# temp	
+	
+	move	$s0,$a0	# source
+	move	$s1,$a1	# copy
+
+# THAN THU TUC:	
+_strcopy.loop:
+	lb	$t0,($s0)
+	sb	$t0,($s1)
+	beq	$t0,'\0',_strcopy.exit
+	addi	$s0,$s0,1
+	addi	$s1,$s1,1
+	j	_strcopy.loop
+
+# CUOI THU TUC:
+_strcopy.exit:
+
+	lw	$t9,0($sp)	# throw
+	lw	$ra,4($sp)
+	lw	$s0,8($sp)	# sourc
+	lw	$s1,12($sp)	# copy
+	lw	$t0,16($sp)	# temp
+	addi	$sp,$sp,16
+
+	jr	$ra
 
 # == ScanChar(word) -------------------------------------------------
 #	@param	inputWord -> $a0
@@ -414,10 +448,12 @@ _ScanChar.exit:
 _ScanWord:
 # DAU THU TUC:
 	#Back up:
-	addi	$sp,$sp,-8
-	sw 	$s0,0($sp) 	# word
+	addi	$sp,$sp,-16
+	sw	$t9,0($sp)	# Throw
 	sw	$ra,4($sp)
-	sw 	$s1,8($sp) 	# inputword
+	sw 	$s0,8($sp) 	# word
+	sw 	$s1,12($sp) 	# inputstr length
+	sw	$t0,16($sp)	# temp
 	# Luu lai gia tri tham so vao thanh ghi
 	move 	$s0,$a0
 # THAN THU TUC:
@@ -428,13 +464,20 @@ _ScanWord:
 		
 	# Nhap word(input word)
 	li 	$v0,8
+	la	$a0,inputstr
+	la	$a1,50
 	syscall
 	
-	move 	$s1,$a0
-
+	la	$a0,inputstr
+	jal 	_strlen
+	
+	addi	$s1,$v0,-1
+	addi	$t0,$zero,'\0'
+	sb	$t0,inputstr($s1)
+	
 	# Truyen tham so
-	move 	$a0,$s1 #--> xoa neu xoa dong 354
-	move 	$a1,$s0
+	move	$a0,$s0
+	la	$a1,inputstr
 	
 	# Goi ham kt Word voi Word
 	jal 	_strcmp
@@ -450,10 +493,12 @@ _ScanWord.exit:
 
 # CUOI THU TUC:
 	# Restore
-	lw 	$s0,0($sp) 	# word
+	lw	$t9,0($sp)	# Throw
 	lw	$ra,4($sp)
-	lw 	$s1,8($sp) 	# inputword
-	addi 	$sp,$sp,8
+	lw 	$s0,8($sp) 	# word
+	lw 	$s1,12($sp) 	# inputstr length
+	lw	$t0,16($sp)	# temp
+	addi 	$sp,$sp,16
 	
 	jr 	$ra
 # == Scan(How_to_scan,word) -------------------------------------------------
@@ -631,9 +676,10 @@ _check_exist:
 	lw	$s1,12($sp)	# 
 	addi 	$sp,$sp,12
 
-	jr $ra
+	jr 	$ra
 
 # == Guessing(str word) -------------------------------------------------
+#	$a0 <- word
 #	return -1 -> lost
 #	return 0 -> change word
 #	return 1 -> guess char correct but not compete word
@@ -665,11 +711,11 @@ _guessing:
 	beq	$s1,2,_guessing.word
 # -----	# Char: --------------------- #
 _guessing.char:
-	beq $t2,1,_guessing.char.correct
+	beq 	$t2,1,_guessing.char.correct
 
 _guessing.char.wrong:
-	addi $v0,$zero,2	
-	j _guessing.exit
+	addi 	$v0,$zero,2	
+	j 	_guessing.exit
 
 _guessing.char.correct:
 
@@ -682,23 +728,27 @@ _guessing.char.correct:
 	addi 	$v0,$zero,1
 
 _guessing.notcompeted:
-	addi $v0,$zero,1
+	addi 	$v0,$zero,1
 	j _guessing.exit
 
 _guessing.competed:
-	addi $v0,$zero,0
-	j _guessing.exit
+	addi 	$v0,$zero,0
+	j 	_guessing.exit
 
 # -----	# Word: --------------------- #
 _guessing.word:
-	beq $t2,0,_guessing.word.wrong
+	beq 	$t2,0,_guessing.word.wrong
 
 _guessing.word.correct:
-	addi $v0,$zero,0
-	j _guessing.exit
+
+	move	$a0,$s0
+	la	$a1,guessword
+	jal 	_strcopy
+	addi 	$v0,$zero,0
+	j 	_guessing.exit
 
 _guessing.word.wrong:
-	addi $v0,$zero,-1
+	addi 	$v0,$zero,-1
 
 _guessing.exit:	
 # CUOI THU TUC:
