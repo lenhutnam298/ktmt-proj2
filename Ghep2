@@ -1,12 +1,11 @@
-# Chưa chạy được nhưng cấu trúc tương đối là thế này
+# chua co dk dung ve ham
 .data
-	
-	
 	# test case.
-	test:	.asciiz "apple"
+	test:	.asciiz "apple\n"
 	# ki tu:
 	space: .byte '_'
 	endline: .byte '\0'
+	enter: .byte '\n'
 	# Ve bang
 	tb0: .asciiz "\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
 	tb01: .asciiz "\n\n\n"
@@ -39,12 +38,10 @@
 	la	$a1,guessword
 	jal 	_generate_guessword	
 	
-	
-	la	$a0,guessword
-	jal 	_printGuessword
-
-	la $a0,test
-	jal _guessing
+	# Truyen tham so
+	la $a0, test
+	# Goi ham ve
+	jal _Hangman
 
 	la	$a0,guessword
 	jal 	_printGuessword
@@ -55,12 +52,13 @@
 # == bool checkInWord(word, input char)---------------------------------------------
 _check_in_word:
 	addi	$sp,$sp,-32
-	sw	$ra,($sp)
-	sw	$s0,4($sp)		#word
-	sw	$t0,8($sp)		#input char
-	sw	$t1,12($sp)		#cur char
-	sw	$t2,16($sp)		#cur char index
-	sw	$t3,20($sp)		#found?
+	sw	$t9,0($sp)
+	sw	$ra,4($sp)
+	sw	$s0,8($sp)		#word
+	sw	$t0,12($sp)		#input char
+	sw	$t1,16($sp)		#cur char
+	sw	$t2,20($sp)		#cur char index
+	sw	$t3,24($sp)		#found?
 
 	#init	
 	move	$s0,$a0			#word
@@ -92,11 +90,13 @@ _check_in_word.end_loop:
 	move	$v0,$t3
 	
 	#restore
-	lw	$ra,($sp)
-	lw	$s0,4($sp)		
-	lw	$t0,8($sp)		
-	lw	$t1,12($sp)		
-	lw	$t2,16($sp)
+	lw	$t9,0($sp)
+	lw	$ra,4($sp)
+	lw	$s0,8($sp)		#word
+	lw	$t0,12($sp)		#input char
+	lw	$t1,16($sp)		#cur char
+	lw	$t2,20($sp)		#cur char index
+	lw	$t3,24($sp)		#found?
 	addi	$sp,$sp,32
 
 	jr 	$ra	
@@ -105,11 +105,13 @@ _check_in_word.end_loop:
 #dau thu tuc
 _Hangman:
 	addi 	$sp,$sp,-32
-	sw 	$ra,($sp)
-	sw 	$s0,4($sp) 	# word
-	sw 	$t0,8($sp) 	# i
-	sw	$t1,12($sp)	# temp
-	sw 	$t2,16($sp)	# kq nhap
+	sw	$t9,($sp)
+	sw 	$ra,4($sp)
+	sw 	$s0,8($sp) 	# wạrd
+	sw 	$t0,12($sp) 	# i = chance
+	sw	$t1,16($sp)	# temp
+	sw	$t2,20($sp)	# kq guessing
+	
 	#Lay tham so luu vao thanh ghi
 	move 	$s0, $a0
 
@@ -212,7 +214,7 @@ Ve4:
 	# Tuyen tham so
 	move 	$a0,$s0
 	# Goi ham nhap
-	jal _ScanChar
+	jal _guessing
 
 	#Kiem tra kq tra ve = 1
 	beq 	$v0,1,_Hangman.Lap
@@ -236,10 +238,11 @@ KetThuc:
 	syscall
 
 	#Restore
-	lw 	$ra,($sp)
-	lw 	$s0, 4($sp) #n
-	lw 	$t0, 8($sp)
-	lw 	$t1, 12($sp)
+	lw	$t9,($sp)
+	lw 	$ra,4($sp)
+	lw 	$s0,8($sp) 	# word
+	lw 	$t0,12($sp) 	# i
+	lw	$t1,16($sp)	# temp
 
 	addi 	$sp,$sp,32
 	jr 	$ra
@@ -250,10 +253,13 @@ KetThuc:
 #	@return 1 if $a0 longer than $a1
 #	@return -1 if $a0 shorter than $a1
 _strcmp:
-	addi	$sp,$sp,-8
-	sw	$ra,($sp)
-	sw	$s0,4($sp)	# inputWord
-	sw	$s1,8($sp)	# testWord
+	addi	$sp,$sp,-20
+	sw	$t9,0($sp)
+	sw	$ra,4($sp)
+	sw	$s0,8($sp)	# inputWord
+	sw	$s1,12($sp)	# testWord
+	sw	$t0,16($sp)
+	sw	$t1,20($sp)
 
 	move	$s0, $a0
 	move	$s1, $a1
@@ -273,25 +279,13 @@ _strcmp.equal.continue:
 	j 	_strcmp.Loop
 _strcmp.return_equal:
 	addi 	$v0, $zero, 0
-	lw	$ra,($sp)
-	lw	$s0,4($sp)	# inputWord
-	lw	$s1,8($sp)	# testWord
-	addi	$sp,$sp,8
-	jr 	$ra
+	j	_strcmp.exit	
 _strcmp.return_shorter:
 	addi 	$v0, $zero, -1
-	lw	$ra,($sp)
-	lw	$s0,4($sp)	# inputWord
-	lw	$s1,8($sp)	# testWord
-	addi	$sp,$sp,8
-	jr 	$ra
+	j	_strcmp.exit
 _strcmp.return_longer:
 	addi 	$v0, $zero, 1
-	lw	$ra,($sp)
-	lw	$s0,4($sp)	# inputWord
-	lw	$s1,8($sp)	# testWord
-	addi	$sp,$sp,8
-	jr 	$ra		
+	j	_strcmp.exit	
 _strcmp_ne:
 	# $t0 != $t1:
 	sub 	$v0, $t0, $t1
@@ -299,6 +293,15 @@ _strcmp_ne:
 	slt	$t2, $v0, $zero
 	beq	$t2, 1, _strcmp.return_longer	
 	beq	$t2, 0, _strcmp.return_shorter
+_strcmp.exit:
+	lw	$t9,0($sp)
+	lw	$ra,4($sp)
+	lw	$s0,8($sp)	# inputWord
+	lw	$s1,12($sp)	# testWord
+	lw	$t0,16($sp)
+	lw	$t1,20($sp)
+	addi	$sp,$sp,20
+	jr 	$ra
 # == int _strlen -------------------------------------------------
 #	@param: string input -> $a0
 #	@return the length of string -> $v0
@@ -373,6 +376,7 @@ _ScanChar:
 	move 	$a2,$s0
 	
 	jal 	update_guessword
+	j 	_ScanChar.exit
 _ScanChar.existed:
 	addi 	$t1,$zero,0
 	
@@ -447,10 +451,11 @@ _ScanWord.exit:
 _Scan:
 # DAU THU TUC:
 	# Restore
-	addi 	$sp,$sp,-8
-	sw 	$s0,0($sp)	# Cach nhap
+	addi 	$sp,$sp,-12	
+	sw	$t9,0($sp)	# throw
 	sw 	$ra,4($sp)
-	sw 	$s1,8($sp)	# word
+	sw 	$s0,8($sp)	# Cach nhap
+	sw 	$s1,12($sp)	# word
 	# Luu gia tri tham so vao thanh ghi
 	move 	$s0,$a0
 	move 	$s1,$a1
@@ -468,10 +473,11 @@ _Scan.SWord:
 	jal _ScanWord
 # CUOI THU TUC
 _Scan.exit:
-	lw 	$s0,0($sp)	# Cach nhap nhap
+	lw	$t9,0($sp)	# throw
 	lw 	$ra,4($sp)
-	lw 	$s1,8($sp)	# word
-	addi 	$sp,$sp,8
+	lw 	$s0,8($sp)	# Cach nhap
+	lw 	$s1,12($sp)	# word
+	addi 	$sp,$sp,12
 	jr $ra
 # == void generate_guessword(word,guessword) ------------------------------------
 #	@param: string input -> $a0
@@ -500,8 +506,11 @@ generate_guessword.loop:
 	addi	$s1,$s1,1
 	blt 	$t1,$t0,generate_guessword.loop
 	
-	la 	$t2,endline
+	la 	$t2,enter
 	sb	$t2,($s1)
+
+	la 	$t2,endline
+	sb	$t2,4($s1)
 # CUOI THU TUC:
 
 	lw 	$s0,0($sp)	# word
@@ -566,7 +575,7 @@ update_guessword.exit:
 	lw	$s0,4($sp)	# guessword
 	lw	$s1,8($sp)	# char
 	lw	$s2,12($sp)	# word
-	lw	$t2,16($sp)	# word
+	lw	$t2,16($sp)
 	addi	$sp,$sp,16
 	
 	jr	$ra
@@ -600,6 +609,10 @@ _check_exist:
 	jr $ra
 
 # == Guessing(str word) -------------------------------------------------
+#	return -1 -> lost
+#	return 0 -> change word
+#	return 1 -> guess char correct but not compete word
+#	return 2 -> guess char wrong
 _guessing:
 # DAU THU TUC:
 	addi 	$sp,$sp,-12
@@ -607,6 +620,7 @@ _guessing:
 	sw	$ra,4($sp)	
 	sw	$s0,8($sp)	# word
 	sw	$s1,12($sp)	# guessing way: 1_char; 2_word
+	sw	$t2,16($sp)	# scan result
 	
 	move	$s0,$a0
 # THAN THUC TUC:
@@ -616,12 +630,28 @@ _guessing:
 
 	li	$v0,5
 	syscall
-	
-	move	$a0,$v0
+	move $s1,$v0
+
+	move	$a0,$s1
 	move	$a1,$s0
 	
-	jal _Scan
+	jal 	_Scan
+	beq 	$s1,2,_guessing.exit
+	beq 	$v0,0,_guessing.exit
 	
+
+	# Check compete
+	move	$a0,$s0
+	la	$a1,guessword
+	jal	_strcmp
+	
+	beq	$v0,0,_guessing.competed
+	addi $v0,$zero,1
+_guessing.notcompeted:
+	j _guessing.exit
+_guessing.competed:
+	addi $v0,$zero,0
+_guessing.exit:	
 # CUOI THU TUC:
 	lw 	$t9,($sp)	#throw
 	lw	$ra,4($sp)	
@@ -630,6 +660,8 @@ _guessing:
 	addi 	$sp,$sp,12
 
 	jr $ra
+
+
 # == StopRuning -------------------------------------------------
 StopRuning:
 	# Ket thuc 
