@@ -1,9 +1,9 @@
 .data
 
 .text
-	# jal 	_startSound
-	# jal 	_failSound
-	# jal 	_successSound
+	jal 	_startSound
+	jal 	_failSound
+	jal 	_successSound
 	jal 	_endSound
 	jal	_exit
 	
@@ -15,11 +15,11 @@ _startSound:
 	sw	$a1, 12($sp)
 	sw	$a2, 16($sp)
 	sw	$a3, 20($sp)
-	li $v0, 33
-	li $a0, 60	# pitch, C#
-	li $a1, 600	#duration in milisecond
-	li $a2, 111	#instrument (0 - 7 piano)
-	li $a3, 100	#volume
+	li 	$v0, 33
+	li 	$a0, 60	# pitch, C#
+	li 	$a1, 600	#duration in milisecond
+	li 	$a2, 111	#instrument (0 - 7 piano)
+	li 	$a3, 100	#volume
 	syscall
 	lw 	$ra,($sp)
 	lw	$v0, 4($sp)
@@ -28,7 +28,7 @@ _startSound:
 	lw	$a2, 16($sp)
 	lw	$a3, 20($sp)
 	addi 	$sp,$sp,20
-	jr $ra
+	jr 	$ra
 
 _failSound:
 	addi 	$sp,$sp, -20
@@ -38,13 +38,12 @@ _failSound:
 	sw	$a1, 12($sp)
 	sw	$a2, 16($sp)
 	sw	$a3, 20($sp)
-	# Play wrong sound
 	
-	li $v0, 33
-	li $a0, 60	# pitch, C#
-	li $a1, 2000	#duration in milisecond
-	li $a2, 119	#instrument (0 - 7 piano)
-	li $a3, 300	#volume
+	li 	$v0, 33
+	li 	$a0, 60	# pitch, C#
+	li 	$a1, 2000	#duration in milisecond
+	li 	$a2, 119	#instrument (0 - 7 piano)
+	li 	$a3, 300	#volume
 	syscall	
 	
 	
@@ -62,7 +61,7 @@ _failSound:
 	lw	$a3, 20($sp)
 	addi 	$sp,$sp,20
 	
-	jr $ra
+	jr 	$ra
 	
 _successSound:
 	addi 	$sp,$sp, -20
@@ -73,11 +72,11 @@ _successSound:
 	sw	$a2, 16($sp)
 	sw	$a3, 20($sp)
 	
-	li $v0, 33
-	li $a0, 60	# pitch, C#
-	li $a1, 2000	#duration in milisecond
-	li $a2, 119	#instrument (0 - 7 piano)
-	li $a3, 300	#volume
+	li 	$v0, 33
+	li 	$a0, 60	# pitch, C#
+	li 	$a1, 2000	#duration in milisecond
+	li 	$a2, 119	#instrument (0 - 7 piano)
+	li 	$a3, 300	#volume
 	syscall	
 	
 	li 	$v0, 31				
@@ -139,7 +138,7 @@ _successSound:
 	lw	$a3, 20($sp)
 	addi 	$sp,$sp, 20
 	
-	jr $ra
+	jr 	$ra
 	
 _endSound:
 	addi 	$sp,$sp, -20
@@ -150,7 +149,7 @@ _endSound:
 	sw	$a2, 16($sp)
 	sw	$a3, 20($sp)
 	li 	$v0, 33
-	li 	$a0, 60	# pitch, C#
+	li 	$a0, 60		# pitch, C#
 	li	$a1, 2000	#duration in milisecond
 	li 	$a2, 119	#instrument (0 - 7 piano)
 	li 	$a3, 300	#volume
@@ -170,7 +169,7 @@ _endSound:
 	lw	$a3, 20($sp)
 	addi 	$sp,$sp, 20
 	
-	jr $ra
+	jr 	$ra
 _exit:
 	li	$v0,10
 	syscall
