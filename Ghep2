@@ -21,9 +21,10 @@
 	tb11: .asciiz "\n  | / \\"
 	tb12: .asciiz "\n\n GAME OVER "
 	# Bang thong bao:
+	start_menu:	.asciiz "\n[0] Thoat\n[1] Bat dau\n>> "
 	promt_ScanChar: .asciiz "Nhap ki tu: "
-	promt_ScanWord: .asciiz "Nhap chu: "
-	promt_guessing1: .asciiz "Nhap cach doan tu: "
+	promt_ScanWord: .asciiz "Nhap tu: "
+	promt_guessing1: .asciiz "[1] Doan ky tu\n[2] Doan tu\n>> "
 	
 
 	#
@@ -33,7 +34,20 @@
 	inputstr: .space 50
 .text 
 	
+	#show menu
+	li	$v0,4
+	la	$a0,start_menu
+	syscall
+
+	#menu option
+	li	$v0,5
+	syscall
+
+	move	$t0,$v0
 	
+	beq	$t0,0,StopRuning
+	#beq	$t0,1,EnterName		#ham nhap ten @Truong Khoa
+
 	la	$a0,test
 	la	$a1,guessword
 	jal 	_generate_guessword	
@@ -107,7 +121,7 @@ _Hangman:
 	addi 	$sp,$sp,-32
 	sw	$t9,($sp)
 	sw 	$ra,4($sp)
-	sw 	$s0,8($sp) 	# wạrd
+	sw 	$s0,8($sp) 	# w?rd
 	sw 	$t0,12($sp) 	# i = chance
 	sw	$t1,16($sp)	# temp
 
@@ -766,26 +780,3 @@ StopRuning:
 	# Ket thuc 
 	li	$v0,10
 	syscall
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
