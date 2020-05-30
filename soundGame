@@ -1,0 +1,176 @@
+.data
+
+.text
+	# jal 	_startSound
+	# jal 	_failSound
+	# jal 	_successSound
+	jal 	_endSound
+	jal	_exit
+	
+_startSound:
+	addi 	$sp,$sp, -20
+	sw 	$ra,($sp)
+	sw	$v0, 4($sp)
+	sw	$a0, 8($sp)
+	sw	$a1, 12($sp)
+	sw	$a2, 16($sp)
+	sw	$a3, 20($sp)
+	li $v0, 33
+	li $a0, 60	# pitch, C#
+	li $a1, 600	#duration in milisecond
+	li $a2, 111	#instrument (0 - 7 piano)
+	li $a3, 100	#volume
+	syscall
+	lw 	$ra,($sp)
+	lw	$v0, 4($sp)
+	lw	$a0, 8($sp)
+	lw	$a1, 12($sp)
+	lw	$a2, 16($sp)
+	lw	$a3, 20($sp)
+	addi 	$sp,$sp,20
+	jr $ra
+
+_failSound:
+	addi 	$sp,$sp, -20
+	sw 	$ra,($sp)
+	sw	$v0, 4($sp)
+	sw	$a0, 8($sp)
+	sw	$a1, 12($sp)
+	sw	$a2, 16($sp)
+	sw	$a3, 20($sp)
+	# Play wrong sound
+	
+	li $v0, 33
+	li $a0, 60	# pitch, C#
+	li $a1, 2000	#duration in milisecond
+	li $a2, 119	#instrument (0 - 7 piano)
+	li $a3, 300	#volume
+	syscall	
+	
+	
+	li 	$v0, 31			
+	li	$a0, 42				
+	li	$a1, 500			
+	li	$a2, 111			
+	li	$a3, 120
+	syscall
+	lw 	$ra,($sp)
+	lw	$v0, 4($sp)
+	lw	$a0, 8($sp)
+	lw	$a1, 12($sp)
+	lw	$a2, 16($sp)
+	lw	$a3, 20($sp)
+	addi 	$sp,$sp,20
+	
+	jr $ra
+	
+_successSound:
+	addi 	$sp,$sp, -20
+	sw 	$ra,($sp)
+	sw	$v0, 4($sp)
+	sw	$a0, 8($sp)
+	sw	$a1, 12($sp)
+	sw	$a2, 16($sp)
+	sw	$a3, 20($sp)
+	
+	li $v0, 33
+	li $a0, 60	# pitch, C#
+	li $a1, 2000	#duration in milisecond
+	li $a2, 119	#instrument (0 - 7 piano)
+	li $a3, 300	#volume
+	syscall	
+	
+	li 	$v0, 31				
+	li	$a0, 60				
+	li	$a1, 300			
+	li	$a2, 12				
+	li	$a3, 127			
+	syscall
+	
+	li	$v0, 32
+	li	$a0, 150
+	syscall
+	
+	li 	$v0, 31				
+	li	$a0, 62				
+	li	$a1, 300			
+	li	$a2, 12				
+	li	$a3, 127			
+	syscall
+	
+	li	$v0, 32
+	li	$a0, 150
+	syscall
+	
+	li 	$v0, 31				
+	li	$a0, 64				
+	li	$a1, 300			
+	li	$a2, 12				
+	li	$a3, 127			
+	syscall	
+	
+	li	$v0, 32
+	li	$a0, 150
+	syscall
+	
+	li 	$v0, 31				
+	li	$a0, 67				
+	li	$a1, 300			
+	li	$a2, 12				
+	li	$a3, 127			
+	syscall
+	
+	li	$v0, 32
+	li	$a0, 150
+	syscall
+	
+	li 	$v0, 31				
+	li	$a0, 72				
+	li	$a1, 400			
+	li	$a2, 12				
+	li	$a3, 127			
+	syscall
+	
+	lw 	$ra,($sp)
+	lw	$v0, 4($sp)
+	lw	$a0, 8($sp)
+	lw	$a1, 12($sp)
+	lw	$a2, 16($sp)
+	lw	$a3, 20($sp)
+	addi 	$sp,$sp, 20
+	
+	jr $ra
+	
+_endSound:
+	addi 	$sp,$sp, -20
+	sw 	$ra,($sp)
+	sw	$v0, 4($sp)
+	sw	$a0, 8($sp)
+	sw	$a1, 12($sp)
+	sw	$a2, 16($sp)
+	sw	$a3, 20($sp)
+	li 	$v0, 33
+	li 	$a0, 60	# pitch, C#
+	li	$a1, 2000	#duration in milisecond
+	li 	$a2, 119	#instrument (0 - 7 piano)
+	li 	$a3, 300	#volume
+	syscall	
+	
+	li 	$v0, 31				
+	li	$a0, 60				
+	li	$a1, 2000			
+	li	$a2, 200			
+	li	$a3, 127			
+	syscall
+	lw 	$ra,($sp)
+	lw	$v0, 4($sp)
+	lw	$a0, 8($sp)
+	lw	$a1, 12($sp)
+	lw	$a2, 16($sp)
+	lw	$a3, 20($sp)
+	addi 	$sp,$sp, 20
+	
+	jr $ra
+_exit:
+	li	$v0,10
+	syscall
