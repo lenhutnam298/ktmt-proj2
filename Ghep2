@@ -67,9 +67,6 @@
 	# Goi ham ve
 	jal _Hangman
 
-	la	$a0,guessword
-	jal 	_print_guessword
-
 	j _stop_runing
 # ==================== UNITY ============================================================ #
  
@@ -950,7 +947,7 @@ _Hangman:
 	sw 	$t0,12($sp) 	# i = chance
 	sw	$t1,16($sp)	# temp
 	sw	$t2,20($sp)	# score
-	sw	$t3,24($sp)	# guessing result
+	sw	$t3,24($sp)	# temp2
 	#Lay tham so luu vao thanh ghi
 	move 	$s0, $a0
 
@@ -1114,6 +1111,10 @@ KetThuc:
 	li 	$v0,4
 	la 	$a0, promt_draw12
 	syscall
+	
+	addi	$a0,$zero,'\n'
+	li	$v0,11
+	syscall
 
 	li	$v0,4
 	la	$a0,promt_score
@@ -1130,7 +1131,7 @@ KetThuc:
 	lw 	$t0,12($sp) 	# i = chance
 	lw	$t1,16($sp)	# temp
 	lw	$t2,20($sp)	# score
-	lw	$t3,24($sp)	# guessing result
+	lw	$t3,24($sp)	
 
 	addi 	$sp,$sp,32
 	jr 	$ra
