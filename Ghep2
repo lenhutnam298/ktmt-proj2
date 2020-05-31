@@ -1,6 +1,4 @@
-# da co the lay random tu trong mang ra dung lam tu de doan
-# con thieu buoc tinh diem va nhap + am thanh
-
+# Con thieu: 1.ktnhap;2.loaitrung;3.amthanh
 .data
 	# file location
 	myfin: .asciiz "D:\\Testcase\\test.txt"
@@ -26,8 +24,10 @@
 	promt_scanChar: .asciiz "Nhap ki tu: "
 	promt_scanWord: .asciiz "Nhap chu: "
 	promt_guessing1: .asciiz "Nhap cach doan tu: "
+	promt_score: .asciiz "Score: "
 	# 
 	N: .word 0
+	score: .word 0
 	buffer: .space 1024
 	str:	.space	50
 	guessword: .space 50
@@ -307,6 +307,65 @@ _strcopy.exit:
 	jr	$ra
 ######################################################################################################
 
+######################################################################################################
+# == int  _count_different_char_in_word (string sourceStr, char: char) -------------------------------------------------
+# 	- input :
+#	  + @param 	$a0 = sourceStr (string)
+#	  + @param 	$a1 = char (char)
+# 	- output :
+#	  + @return	number of times where $a1 not appear in $a0 (int)
+#	- Use for:	count number of times where $a1 not appear in $a0 
+_count_different_char_in_word:
+# DAU THU TUC:
+	addi	$sp,$sp,-32
+	sw	$t9,0($sp)	# throw
+	sw	$ra,4($sp)
+	sw	$s0,8($sp)	# sourceStr
+	sw	$s1,12($sp)	# char
+	sw	$t0,16($sp)	# count i
+	sw	$t1,20($sp)	# temp
+	sw	$t2,24($sp)	# '\0'
+	# safe exit
+	sw 	$s2,28($sp)	# word length
+	sw	$t3,32($sp)	# count j
+
+
+	move	$s0,$a0
+	move	$s1,$a1
+	
+	addi 	$t0,$zero,0
+	
+	move	$a0,$s0
+	jal 	_strlen
+	move	$s2,$v0
+	addi 	$t3,$zero,0
+# THAN THU TUC:	
+_count_different_char_in_word.loop:
+	lb	$t1,($s0)
+	beq	$t1,$t2,_count_different_char_in_word.exit
+	bge	$t3,$s2,_count_different_char_in_word.exit
+	beq	$s1,$t1,_count_different_char_in_word.inc
+	addi 	$t0,$t0,1
+_count_different_char_in_word.inc:	
+	addi 	$s0,$s0,1
+	addi 	$t3,$t3,1
+	j 	_count_different_char_in_word.loop
+_count_different_char_in_word.exit:
+	
+# CUOI THU TUC:
+	move	$v0,$t0
+	lw	$t9,0($sp)	# throw
+	lw	$ra,4($sp)
+	lw	$s0,8($sp)	# sourceStr
+	lw	$s1,12($sp)	# char
+	lw	$t0,16($sp)	# count i
+	lw	$t1,20($sp)	# temp
+	lw	$t2,24($sp)	# '\0'
+	lw 	$s2,28($sp)	# word length
+	lw	$t3,32($sp)	# count j
+	addi	$sp,$sp,32
+	jr $ra
+######################################################################################################
 # ==================== SYSTEM ============================================================ #
 
 # -------------------- INPUT FORM BOARD ------------------------------------------------------------ #
@@ -890,16 +949,17 @@ _Hangman:
 	sw 	$s0,8($sp) 	# w?rd
 	sw 	$t0,12($sp) 	# i = chance
 	sw	$t1,16($sp)	# temp
-
+	sw	$t2,20($sp)	# score
+	sw	$t3,24($sp)	# guessing result
 	#Lay tham so luu vao thanh ghi
 	move 	$s0, $a0
 
 	#Khoi tap vong lap
 	li 	$t0, 0 #$t0 = 0
-	
+	la	$t2,score
+	lw	$t2,($t2)
 #than thu tuc
 _Hangman.Lap:
-
 
 	li 	$v0, 4
 	la 	$a0, promt_draw0
@@ -992,9 +1052,11 @@ Ve4:
 	la 	$a0, promt_draw01
 	syscall
 
-
 	la	$a0,guessword
 	jal 	_print_guessword
+
+	
+
 	# Tuyen tham so
 	la	$a0,test
 	# Goi ham nhap
@@ -1007,18 +1069,34 @@ Ve4:
 	beq	$v0,2,_Hangman.Wrongchar
 
 _Hangman.Lost:
+	la	$a0,guessword
+	addi	$a1,$zero,'-'
+	jal 	_count_different_char_in_word
+	add 	$t2,$t2,$v0
+
 	addi 	$t0,$zero,7
 	j _Hangman.Lap
 
 _Hangman.Wrongchar:
+	la	$a0,guessword
+	addi	$a1,$zero,'-'
+	jal 	_count_different_char_in_word
+	add	$t2,$t2,$v0	
+
 	#i = i + 1
 	addi 	$t0,$t0,1
-
+	
 	#Kiem tra i < 6
 	slti 	$t1,$t0,7
 	beq 	$t1,1,_Hangman.Lap
+
 	j KetThuc
 _Hangman.changeWord:
+	la	$a0,guessword
+	addi	$a1,$zero,'-'
+	jal 	_count_different_char_in_word
+	add 	$t2,$t2,$v0
+
 	jal	_generate_word
 
 	la	$a0,test
@@ -1037,12 +1115,22 @@ KetThuc:
 	la 	$a0, promt_draw12
 	syscall
 
+	li	$v0,4
+	la	$a0,promt_score
+	syscall
+	
+	li	$v0,1
+	move	$a0,$t2
+	syscall	
+
 	#Restore
 	lw	$t9,($sp)
 	lw 	$ra,4($sp)
-	lw 	$s0,8($sp) 	# word
-	lw 	$t0,12($sp) 	# i
+	lw 	$s0,8($sp) 	# w?rd
+	lw 	$t0,12($sp) 	# i = chance
 	lw	$t1,16($sp)	# temp
+	lw	$t2,20($sp)	# score
+	lw	$t3,24($sp)	# guessing result
 
 	addi 	$sp,$sp,32
 	jr 	$ra
