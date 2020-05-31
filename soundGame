@@ -2,9 +2,13 @@
 
 .text
 	jal 	_startSound
-	jal 	_failSound
-	jal 	_successSound
+	#jal	_delaySleep
+	#jal 	_failSound
+	#jal	_delaySleep
+	#jal 	_successSound
+	#jal	_delaySleep
 	jal 	_endSound
+	jal	_delaySleep
 	jal	_exit
 	
 _startSound:
@@ -17,7 +21,7 @@ _startSound:
 	sw	$a3, 20($sp)
 	li 	$v0, 33
 	li 	$a0, 60	# pitch, C#
-	li 	$a1, 600	#duration in milisecond
+	li 	$a1, 1500	#duration in milisecond
 	li 	$a2, 111	#instrument (0 - 7 piano)
 	li 	$a3, 100	#volume
 	syscall
@@ -87,7 +91,7 @@ _successSound:
 	syscall
 	
 	li	$v0, 32
-	li	$a0, 150
+	li	$a0, 50
 	syscall
 	
 	li 	$v0, 31				
@@ -98,7 +102,7 @@ _successSound:
 	syscall
 	
 	li	$v0, 32
-	li	$a0, 150
+	li	$a0, 50
 	syscall
 	
 	li 	$v0, 31				
@@ -109,7 +113,7 @@ _successSound:
 	syscall	
 	
 	li	$v0, 32
-	li	$a0, 150
+	li	$a0, 50
 	syscall
 	
 	li 	$v0, 31				
@@ -147,20 +151,34 @@ _endSound:
 	sw	$a0, 8($sp)
 	sw	$a1, 12($sp)
 	sw	$a2, 16($sp)
-	sw	$a3, 20($sp)
+	sw	$a3, 20($sp)	
 	li 	$v0, 33
-	li 	$a0, 60		# pitch, C#
-	li	$a1, 2000	#duration in milisecond
-	li 	$a2, 119	#instrument (0 - 7 piano)
-	li 	$a3, 300	#volume
-	syscall	
 	
-	li 	$v0, 31				
-	li	$a0, 60				
-	li	$a1, 2000			
-	li	$a2, 200			
-	li	$a3, 127			
+	li 	$a0, 60	# pitch, C#
+	li 	$a1, 600	#duration in milisecond
+	li 	$a2, 111	#instrument (0 - 7 piano)
+	li 	$a3, 100	#volume
 	syscall
+	li 	$v0, 32
+	li	$a0, 50
+	syscall		
+	li 	$v0, 33
+	li 	$a0, 60	# pitch, C#
+	li 	$a1, 600	#duration in milisecond
+	li 	$a2, 111	#instrument (0 - 7 piano)
+	li 	$a3, 100	#volume
+	syscall
+	li 	$v0, 32
+	li	$a0, 50
+	syscall	
+	li 	$v0, 33
+	li 	$a0, 60	# pitch, C#
+	li 	$a1, 600	#duration in milisecond
+	li 	$a2, 111	#instrument (0 - 7 piano)
+	li 	$a3, 100	#volume
+	syscall
+	
+	
 	lw 	$ra,($sp)
 	lw	$v0, 4($sp)
 	lw	$a0, 8($sp)
@@ -170,6 +188,20 @@ _endSound:
 	addi 	$sp,$sp, 20
 	
 	jr 	$ra
+_delaySleep:
+	addi 	$sp,$sp, -8
+	sw 	$ra,($sp)
+	sw	$v0, 4($sp)
+	sw	$a0, 8($sp)
+	li 	$v0, 32
+	li	$a0, 2000
+	syscall			
+	lw 	$ra,($sp)
+	lw	$v0, 4($sp)
+	lw	$a0, 8($sp)
+	addi 	$sp,$sp, 8
+	
+	jr 	$ra	
 _exit:
 	li	$v0,10
 	syscall
