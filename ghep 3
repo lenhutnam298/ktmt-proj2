@@ -1,5 +1,3 @@
-# tui đang ghép hàm check random và làm menu còn thiếu hàm sort và ghi file thôi
-# mạng tui đang lag lắm nếu có gì đỡ hơn thì tui nhắn lại sau
 .data
 	# file location
 	myfin: .asciiz "D:\\Testcase\\test.txt"
@@ -23,19 +21,24 @@
 	promt_draw12: .asciiz "\n\n GAME OVER "
 	# Bang thong bao:
 	promt_entername: .asciiz "Nhap ten: "
+	promt_name: .asciiz "Ten nguoi choi: "
 	promt_scanChar: .asciiz "Nhap ki tu: "
 	promt_error.invalid:"\nNhap sai!! Vui long nhap lai:\n"
-	promt_scanWord: .asciiz "Nhap chu: "
+	promt_error.invalid_guessing: .asciiz "Cach nhap chi co the la\n + 1:Nhap 1 ki tu\n + 2:Nhap 1 chu cai" 
+	promt_error.invalid_entername: .asciiz "Ten khong duoc co ki tu dac biet \n{cac ki tu phai nam trong khoang (0-9)(a-z)(A-Z)}" 
+	promt_error.invalid_word: .asciiz "Tu khong duoc co ki tu dac biet \n{cac ki tu phai nam trong khoang (0-9)(a-z)(A-Z)}"
+	promt_error.invalid_char: .asciiz "Ki tu khong duoc la ki tu dac biet \n{cac ki tu phai nam trong khoang (0-9)(a-z)(A-Z)}"	
+	promt_scanWord: .asciiz "Nhap tu: "
 	promt_guessing1: .asciiz "Nhap cach doan tu: "
 	promt_score: .asciiz "Score: "
 	# 
 	N: .word 0
-	score: .word 0
 	buffer: .space 1024
 	str:	.space	50
 	guessword: .space 50
 	inputstr: .space 50
 	Name: .space 30
+	guessed: .space 50
 .text
 
 # ==================== MAIN ============================================================ #
@@ -44,38 +47,12 @@
 	li	$v0,4
 	la	$a0,Name
 	syscall
-
-	li	$v0, 13       # system call for open file
-	la   	$a0, myfin      # board file name
-	li   	$a1, 0           # flag for reading
-	li   	$a2, 0           # mode is ignored
-	syscall            # open a file (file descriptor returned in $v0)
-	move 	$s6, $v0      # save the file descriptor 
-
-	li 	$v0, 14 # open file
-	move 	$a0,$s6
-	la 	$a1, buffer
-	li 	$a2, 1024
+	
+	li	$v0,11	
+	addi	$a0,$zero,'\n'
 	syscall
 
-	li 	$v0, 16 # close file
-	move 	$a0, $s6
-	syscall	
-
-	jal	_update_number_of_word
-	jal	_generate_word
-
-	la	$a0,test
-	la	$a1,guessword
-	jal 	_generate_guessword	
-	
-	# Truyen tham so
-	la $a0, test
-	# Goi ham ve
-	jal _Hangman
-
-	la	$a0,guessword
-	jal 	_print_guessword
+	jal	Play
 
 	j _stop_runing
 # ==================== UNITY ============================================================ #
@@ -197,6 +174,7 @@ _check_input_valid:
 
 	move	$s0,$a0
 # THAN THU TUC:
+	beq 	$t0,'_',_check_input_valid.false
 
 	slti 	$t0,$s0,'0'
 	beq 	$t0,1,_check_input_valid.false
@@ -236,6 +214,54 @@ _check_input_valid.exit:
 	addi	$sp,$sp,16
 
 	jr	$ra
+######################################################################################################
+
+######################################################################################################
+# == bool _check_valid_word(string: word) -------------------------------------------------
+# - input :
+#	 + @param 	$a0 = word	(string)
+# - output:
+#	 + @return 0:	$a0 is not valid
+#	 + @return 1: 	$a0 is valid   
+# - use for:	check  whether or not $a0 is in (0-9)(a-z)(A-Z) 
+_check_valid_word:
+# DAU THU TUC:
+	add	$sp,$sp,-16
+	sw	$t9,0($sp)
+	sw	$ra,4($sp)
+	sw	$s0,8($sp)	# Str (string)
+	sw	$t0,12($sp)	
+	sw	$t1,16($sp)	# temp
+	move	$s0,$a0
+# DAU THU TUC:
+_check_valid_word.loop:
+	lb	$t0,($s0)
+	beq	$t0,'\0',_check_valid_word.correct
+	
+	move	$a0,$t0
+	jal	_check_input_valid
+
+	
+	beq	$v0,0,_check_valid_word.false
+	addi	$s0,$s0,1
+	j	_check_valid_word.loop
+
+_check_valid_word.false:
+	addi	$v0,$zero,0
+	j	_check_valid_word.exit
+
+_check_valid_word.correct:	
+	addi	$v0,$zero,1
+
+_check_valid_word.exit:
+# CUOI THU TUC:
+	lw	$t9,0($sp)
+	lw	$ra,4($sp)
+	lw	$s0,8($sp)	# Str (string)
+	lw	$t0,12($sp)
+	lw	$t1,16($sp)	# temp
+	add	$sp,$sp,16
+	jr 	$ra
 ######################################################################################################
 
 ######################################################################################################
@@ -316,13 +342,15 @@ _strlen:
 	# initialization
 	move 	$s0, $a0	# inputword
 	addi 	$t0, $zero, 0
-	
+	lb 	$t1, 0($s0)
+	beqz 	$t1,_strlen.exit	
 _strlen.Loop:
 	addi 	$s0, $s0, 1
 	addi 	$t0, $t0, 1
 _strlen.test:
 	lb 	$t1, 0($s0)
 	bnez 	$t1,_strlen.Loop
+_strlen.exit:
 	move 	$v0, $t0
 
 	lw	$ra, ($sp)
@@ -372,6 +400,50 @@ _strcopy.exit:
 	addi	$sp,$sp,16
 
 	jr	$ra
+######################################################################################################
+
+######################################################################################################
+# ==	void _uncaplock(string: Str) -----------------------------------
+# 	- input :
+#	  + @param 	$a0 = Str (string)
+#	- Use for:	uncaplock
+
+_uncaplock:
+# DAU THU TUC:
+	add	$sp,$sp,-16
+	sw	$t9,0($sp)
+	sw	$ra,4($sp)
+	sw	$s0,8($sp)	# Str (string)
+	sw	$t0,12($sp)	
+	sw	$t1,16($sp)	# temp
+	move	$s0,$a0
+# THAN THU TUC:
+_uncaplock.loop:
+	lb	$t0,($s0)
+	beq	$t0,'\0',_uncaplock.exit
+_uncaplock.check1:
+	addi	$t1,$zero,'A'
+	bgt	$t0,$t1,_uncaplock.check2
+	j 	_uncaplock.inc
+_uncaplock.check2:
+	addi	$t1,$zero,'Z'
+	blt	$t0,$t1,_uncaplock.change
+	j 	_uncaplock.inc
+_uncaplock.change:
+	addi	$t0,$t0,32
+	sb	$t0,($s0)
+_uncaplock.inc:
+	addi	$s0,$s0,1
+	j	_uncaplock.loop
+_uncaplock.exit:
+# CUOI THU TUC:
+	lw	$t9,0($sp)
+	lw	$ra,4($sp)
+	lw	$s0,8($sp)	# Str (string)
+	lw	$t0,12($sp)
+	lw	$t1,16($sp)	# temp
+	add	$sp,$sp,16
+	jr 	$ra
 ######################################################################################################
 
 ######################################################################################################
@@ -478,7 +550,12 @@ _enter_player_name.check_valid.loop:
 	j 	_enter_player_name.check_valid.loop
 
 _enter_player_name.false:
-	#Xuat tb3
+	#Xuat promt_error.invalid
+	li $v0,55
+	la $a0,promt_error.invalid_entername
+	li $a1 ,1
+	syscall
+	
 	li $v0,4
 	la $a0,promt_error.invalid
 	syscall
@@ -502,9 +579,9 @@ _enter_player_name.exit:
 
 
 ######################################################################################################
-# == bchar _input_char() -------------------------------------------------
+# == char  _input_char() -------------------------------------------------
 # - output:
-#	 + @return character that is valid  
+#	 + @return valid char
 # - use for:	input a character and check whether or not that character is in (0-9)(a-z)(A-Z) 
 _input_char:
 	addi	$sp,$sp,-12
@@ -540,6 +617,10 @@ _input_char.check_char:
 	beq 	$t0,1,_input_char.wrong	
 	j	_input_char.exit
 _input_char.wrong:
+	li 	$v0,55
+	la 	$a0,promt_error.invalid_char
+	li 	$a1 ,1
+	syscall
 	#Xuat tb3
 	li 	$v0,4
 	la 	$a0,promt_error.invalid
@@ -623,6 +704,59 @@ _scanChar.exit:
 ######################################################################################################
 
 ######################################################################################################
+# == void  _input_word() -------------------------------------------------
+ 
+# - use for:	input a word and check whether or not that character is in (0-9)(a-z)(A-Z) 
+#		to update inputstr
+_input_word:
+# DAU THU TUC:
+	addi	$sp,$sp,-8
+	sw	$t9,0($sp)
+	sw	$ra,4($sp)
+# DAU THU TUC:
+_input_word.input:
+	# Xuat ban promt_scanWord
+	li 	$v0,4
+	la 	$a0,promt_scanWord
+	syscall
+
+	li 	$v0,8
+	la	$a0,inputstr
+	la	$a1,50
+	syscall
+	
+	la	$a0,inputstr
+	jal 	_strlen
+	
+	addi	$s1,$v0,-1
+	addi	$t0,$zero,'\0'
+	sb	$t0,inputstr($s1)
+	
+	la	$a0,inputstr
+	jal	_check_valid_word
+	beq	$v0,0,_input_word.error
+	j	_input_word.exit
+_input_word.error:
+
+	li 	$v0,55
+	la 	$a0,promt_error.invalid_word
+	li 	$a1 ,1
+	syscall
+
+	li 	$v0,4
+	la 	$a0,promt_error.invalid
+	syscall
+	j	_input_word.input
+
+# CUOI THU TUC:
+_input_word.exit:
+	lw	$t9,0($sp)
+	lw	$ra,4($sp)
+	addi	$sp,$sp,8
+	jr	$ra
+######################################################################################################
+
+######################################################################################################
 # == bool _scanWord(string: word) -------------------------------------------------
 # 	- input :
 #	  + @param 	$a0 = word (string)
@@ -643,24 +777,14 @@ _scanWord:
 	# Luu lai gia tri tham so vao thanh ghi
 	move 	$s0,$a0
 # THAN THU TUC:
-	# Xuat ban promt_scanWord
-	li 	$v0,4
-	la 	$a0,promt_scanWord
-	syscall
+
 		
 	# Nhap word(input word)
-	li 	$v0,8
-	la	$a0,inputstr
-	la	$a1,50
-	syscall
+	jal 	_input_word
 	
 	la	$a0,inputstr
-	jal 	_strlen
-	
-	addi	$s1,$v0,-1
-	addi	$t0,$zero,'\0'
-	sb	$t0,inputstr($s1)
-	
+	jal	_uncaplock
+
 	# Truyen tham so
 	move	$a0,$s0
 	la	$a1,inputstr
@@ -715,12 +839,14 @@ _scan:
 	move 	$s0,$a0
 	move 	$s1,$a1
 # THAN THU TUC:
+
 	# Truyen bien
 	move 	$a0,$s1
 	# kt va chon cach nhap
 	addi 	$v0,$zero,-1
 	beq 	$s0,1,_scan.SChar
 	beq 	$s0,2,_scan.SWord
+
 _scan.SChar:
 	jal 	_scanChar
 	j 	_scan.exit
@@ -886,24 +1012,50 @@ _update_guessword.exit:
 
 _guessing:
 # DAU THU TUC:
-	addi 	$sp,$sp,-16
+	addi 	$sp,$sp,-24
 	sw 	$t9,($sp)	#throw
 	sw	$ra,4($sp)	
 	sw	$s0,8($sp)	# word
-	sw	$s1,12($sp)	# guessing way: 1_char; 2_word
+	sw	$s1,12($sp)	# guessing way: 1_char; 2_word (int)
 	sw	$t2,16($sp)	# scan result
-	
+	sw	$t3,20($sp)	# temp
+	sw	$t4,24($sp)	# guessing way: 1_char; 2_word (char)
 	move	$s0,$a0
 # THAN THUC TUC:
-
+_guessing.choosing:
 	li 	$v0,4
 	la 	$a0,promt_guessing1
 	syscall
 
-	li	$v0,5
+	li	$v0,12
 	syscall
-	move 	$s1,$v0
+	move 	$t4,$v0
+	
+	addi	$t3,$zero,'1'
+	blt	$t4,$t3,_guessing.error
+	addi	$t3,$zero,'2'
+	bgt	$t4,$t3,_guessing.error
 
+	j	_guessing.input
+_guessing.error:
+
+	li 	$v0,55
+	la 	$a0,promt_error.invalid_guessing
+	li 	$a1 ,1
+	syscall
+
+	li 	$v0,4
+	la 	$a0,promt_error.invalid
+	syscall
+	j	_guessing.choosing
+
+_guessing.input:
+	li	$v0,11
+	li	$a0,'\n'
+	syscall
+	
+	sub	$s1,$t4,'0'
+	
 	move	$a0,$s1
 	move	$a1,$s0
 	
@@ -930,7 +1082,7 @@ _guessing.char.correct:
 
 _guessing.notcompeted:
 	addi 	$v0,$zero,1
-	j _guessing.exit
+	j 	_guessing.exit
 
 _guessing.competed:
 	addi 	$v0,$zero,0
@@ -950,7 +1102,7 @@ _guessing.word.correct:
 
 _guessing.word.wrong:
 	addi 	$v0,$zero,-1
-
+	
 _guessing.exit:	
 # CUOI THU TUC:
 	lw 	$t9,($sp)	#throw
@@ -958,7 +1110,9 @@ _guessing.exit:
 	lw	$s0,8($sp)	# word
 	lw	$s1,12($sp)	# guessing way: 1_char; 2_word
 	lw	$t2,16($sp)
-	addi 	$sp,$sp,16
+	lw	$t3,20($sp)	# check
+	lw	$t4,24($sp)
+	addi 	$sp,$sp,24
 
 	jr $ra
 ######################################################################################################
@@ -1085,39 +1239,75 @@ _get_array_I.exit:
 ######################################################################################################
 
 ######################################################################################################
-# == void _generate_word() -------------------------------------------------
+# == bool _generate_word() -------------------------------------------------
 #	- use for 	update  word for guessing
+# - output:
+#	 + @return 0:	out of words
+#	 + @return 1: 	still has word
 _generate_word:
 # DAU THU TUC:
-	addi	$sp,$sp,-12
+	addi	$sp,$sp,-28
 	sw	$t9,0($sp)
 	sw	$ra,4($sp)
 	sw	$s1,8($sp)	# N
-	sw	$t0,12($sp)	# 
+	sw	$t1,12($sp)	# random number $t1 that 0 <= $t0 < N
+	sw	$t0,20($sp)	# temp  
+	sw	$s0,24($sp)	# number of guessed word
+	sw	$t2,28($sp)	# temp2# 
 
 	la	$s1,N
-	
 # THAN THU TUC:
 	lw	$s1,($s1)
 	
+	la	$a0,guessed
+	jal	_strlen
+	move	$s0,$v0
+		
+	beq	$s0,$s1,_generate_word.runout
+_generate_word.random:
 	li 	$v0,42
 	move 	$a1,$s1
 	syscall
-	move	$t0,$a0
+	move	$t1,$a0
 
+_generate_word.check_random.loop:
+	addi	$t0,$zero,'0'
+	add	$t0,$t0,$t1
+	
+	la 	$a0,guessed
+	move	$a1,$t0
+	jal	_check_in_word
+	beq 	$v0,1,_generate_word.random
 
+_generate_word.getword:	
+	
 	la 	$a0,buffer
-	move 	$a1,$t0
+	move 	$a1,$t1
 	la 	$a2,test
 	jal 	_get_array_I
-
+	addi	$v0,$zero,1
+	
+	la	$t2,guessed
+	add	$t2,$t2,$s0
+	sb	$t0,($t2)
+	addi	$t2,$t2,1
+	addi	$t0,$zero,'\0'
+	sb	$t0,($t2)
+	
+	j	_generate_word.exit
+_generate_word.runout:
+	addi	$v0,$zero,0
+_generate_word.exit:
 # CUOI THU TUC:
 	
 	lw	$t9,0($sp)
 	lw	$ra,4($sp)
 	lw	$s1,8($sp)	# N
-	lw	$t0,12($sp)	# 
-	addi	$sp,$sp,12
+	lw	$t1,12($sp)	# random number $t1 that 0 <= $t0 < N
+	lw	$t0,20($sp)	# temp  
+	lw	$s0,24($sp)	# number of guessed word
+	lw	$t2,28($sp)	# temp2# 
+	addi	$sp,$sp,28
 	jr	$ra
 ######################################################################################################
 
@@ -1140,8 +1330,7 @@ _Hangman:
 
 	#Khoi tap vong lap
 	li 	$t0, 0 #$t0 = 0
-	la	$t2,score
-	lw	$t2,($t2)
+	addi	$t2,$zero,0
 #than thu tuc
 _Hangman.Lap:
 
@@ -1282,7 +1471,7 @@ _Hangman.changeWord:
 	add 	$t2,$t2,$v0
 
 	jal	_generate_word
-
+	beq	$v0,0,KetThuc
 	la	$a0,test
 	la	$a1,guessword
 	jal 	_generate_guessword
@@ -1290,6 +1479,7 @@ _Hangman.changeWord:
 	j _Hangman.Lap
 #Cuoi thu tuc
 KetThuc:
+	
 	li 	$v0, 4
 	la 	$a0, promt_draw01
 	syscall
@@ -1299,14 +1489,7 @@ KetThuc:
 	la 	$a0, promt_draw12
 	syscall
 
-	li	$v0,4
-	la	$a0,promt_score
-	syscall
-	
-	li	$v0,1
-	move	$a0,$t2
-	syscall	
-
+	move	$v0,$t2
 	#Restore
 	lw	$t9,($sp)
 	lw 	$ra,4($sp)
@@ -1319,6 +1502,82 @@ KetThuc:
 	addi 	$sp,$sp,32
 	jr 	$ra
 ######################################################################################################
+
+######################################################################################################
+# == void Play()---------------------------------------------
+#	- Use for:	start playing process
+Play:
+# DAU THU TUC:
+	add	$sp,$sp,-12
+	sw	$t9,($sp)	# throw
+	sw	$ra,4($sp)
+	sw	$s0,8($sp)	
+	sw	$t0,12($sp)	
+# THAN THU TUC:	
+
+	li	$v0, 13       	# system call for open file
+	la   	$a0, myfin      # board file name
+	li   	$a1, 0          # flag for reading
+	li   	$a2, 0          # mode is ignored
+	syscall            # open a file (file descriptor returned in $v0)
+	move 	$s0, $v0      # save the file descriptor 
+
+	li 	$v0, 14 # open file
+	move 	$a0,$s0
+	la 	$a1, buffer
+	li 	$a2, 1024
+	syscall
+
+	li 	$v0, 16 # close file
+	move 	$a0, $s0
+	syscall	
+
+	jal	_update_number_of_word
+	jal	_generate_word
+
+	la	$a0,test
+	la	$a1,guessword
+	jal 	_generate_guessword	
+	
+	# Truyen tham so
+	la 	$a0, test
+	# Goi ham ve
+	jal 	_Hangman
+	move	$t0,$v0
+
+	li	$v0,11
+	li	$a0,'\n'
+	syscall
+
+	li	$v0,4
+	la	$a0,promt_name
+	syscall
+
+	li	$v0,4
+	la	$a0,Name
+	syscall
+
+	li	$v0,11
+	li	$a0,'\n'
+	syscall
+
+	li	$v0,4
+	la	$a0,promt_score
+	syscall
+	
+	move	$a0,$t0
+	li	$v0,1
+	syscall
+# CUOI THU TUC
+	lw	$t9,($sp)	# throw
+	lw	$ra,4($sp)
+	lw	$s0,8($sp)
+	lw	$t0,12($sp)
+	add	$sp,$sp,12
+
+	jr 	$ra
+######################################################################################################
+
 
 # ==================== _stop_runing ============================================================ #
 ######################################################################################################
