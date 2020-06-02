@@ -19,6 +19,9 @@
 	promt_draw10: .asciiz "\n  | /"
 	promt_draw11: .asciiz "\n  | / \\"
 	promt_draw12: .asciiz "\n\n GAME OVER "
+	# Menu
+	promt_menu0: .asciiz "		MENU\n0. Exit\n1. Play\n2. Change name\n3. Show top 10\n"
+	promt_menu1: .asciiz "Nhap lua chon: "
 	# Bang thong bao:
 	promt_entername: .asciiz "Nhap ten: "
 	promt_name: .asciiz "Ten nguoi choi: "
@@ -28,6 +31,7 @@
 	promt_error.invalid_entername: .asciiz "Ten khong duoc co ki tu dac biet \n{cac ki tu phai nam trong khoang (0-9)(a-z)(A-Z)}" 
 	promt_error.invalid_word: .asciiz "Tu khong duoc co ki tu dac biet \n{cac ki tu phai nam trong khoang (0-9)(a-z)(A-Z)}"
 	promt_error.invalid_char: .asciiz "Ki tu khong duoc la ki tu dac biet \n{cac ki tu phai nam trong khoang (0-9)(a-z)(A-Z)}"	
+	promt_error.invalid_menu: .asciiz "lua chon chi co the la \n0. Exit\n1. Play\n2. Change name\n3. Show top 10\n"
 	promt_scanWord: .asciiz "Nhap tu: "
 	promt_guessing1: .asciiz "Nhap cach doan tu: "
 	promt_score: .asciiz "Score: "
@@ -42,7 +46,7 @@
 .text
 
 # ==================== MAIN ============================================================ #
-	
+main:	
 	jal	_enter_player_name
 	li	$v0,4
 	la	$a0,Name
@@ -51,9 +55,46 @@
 	li	$v0,11	
 	addi	$a0,$zero,'\n'
 	syscall
+main.menu:
+	la	$v0,4
+	la	$a0,promt_menu0
+	syscall
 
+	la	$v0,4
+	la	$a0,promt_menu1
+	syscall
+
+	li	$v0,12
+	syscall
+	move 	$t0,$v0
+	
+	li	$v0,11	
+	addi	$a0,$zero,'\n'
+	syscall
+
+	addi	$t1,$zero,'0'
+	blt	$t0,$t1,main.error
+	addi	$t1,$zero,'3'
+	bgt	$t0,$t1,main.error
+	j	main.call
+main.error:
+	li 	$v0,55
+	la 	$a0,promt_error.invalid_menu
+	li 	$a1 ,1
+	syscall
+
+	li 	$v0,4
+	la 	$a0,promt_error.invalid
+	syscall
+	j	main.menu
+main.call:
+	beq  	$t0,'0',_stop_runing
+	beq 	$t0,'1',main.callPlay
+	beq 	$t0,'2',main
+	beq 	$t0,'3',_stop_runing
+	j _stop_runing
+main.callPlay:
 	jal	Play
-
 	j _stop_runing
 # ==================== UNITY ============================================================ #
  
