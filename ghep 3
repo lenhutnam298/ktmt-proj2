@@ -1,3 +1,4 @@
+# tui đang ghép hàm check random và làm menu còn thiếu hàm sort và ghi file thôi
 .data
 	# file location
 	myfin: .asciiz "D:\\Testcase\\test.txt"
