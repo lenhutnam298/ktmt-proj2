@@ -1,4 +1,5 @@
 # tui đang ghép hàm check random và làm menu còn thiếu hàm sort và ghi file thôi
+# mạng tui đang lag lắm nếu có gì đỡ hơn thì tui nhắn lại sau
 .data
 	# file location
 	myfin: .asciiz "D:\\Testcase\\test.txt"
