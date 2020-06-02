@@ -1,0 +1,133 @@
+    	.data
+array:	.space  80
+string:	.space  20000     
+n:	.word 0  
+tb1:  	.asciiz "Nhap do dai mang:  "
+tb2:	.asciiz "Nhap chuoi: "
+tb3:  	.asciiz "Mang chuoi:\n"
+
+    	.text
+    	.globl main
+main:
+    	# Nhap do dai chuoi
+    	li $v0,4
+    	la $a0,tb1
+    	syscall
+
+    	li $v0,5
+    	syscall
+
+	sw $v0, n
+
+	#truyen tham so
+	lw $a0, n # $s0 luu do dai mang
+	la $a1, string # Luu dia chi cua chuoi
+
+	# Goi ham nhap mang
+	jal _ArrayString
+
+#===== Phan nay de test ket qua cua arr =====
+	#truyen tham so
+	lw $a0,n
+
+	#goi ham xuat mang
+	jal _XuatMang
+
+	#ket thuc
+	li $v0, 10
+	syscall
+
+#===== Nhap mang =====
+#dau thu tuc
+_ArrayString:
+	addi $sp,$sp,-32
+	sw $ra,($sp)
+	sw $s0, 4($sp) # n: do dai chuoi
+	sw $s1, 8($sp) # string:
+	sw $t0, 12($sp)
+	sw $t1, 16($sp) #
+	sw $t2, 20($sp) # 
+
+	#Lay tham so luu vao thanh ghi
+	move $s0, $a0 # n: do dai chuoi
+	move $s1, $a1 # string:
+
+	#Khoi tap vong lap
+	li $t0, 0 # i: 0
+	li $t1, 1 # dem = 1
+
+_ArrayStringLoop:
+    	bgt $t1,$s0,exit # if (i > n) exit
+
+    	li $v0,4 
+    	la $a0,tb2 # Thong bao nhap string
+    	syscall
+	
+    	move $a0,$s1 # string
+    	li $a1,20 # do dai
+    	li $v0,8
+    	syscall
+	
+    	sw $a0,array($t0) 
+
+    	addi $t0,$t0,4           # array + 1
+    	addi $t1,$t1,1           # dem + 1
+    	addi $s1,$s1,20          # string
+
+    	j _ArrayStringLoop
+
+exit:
+	#Restore
+	lw $ra,($sp)
+	lw $s0, 4($sp) # n: do dai chuoi
+	lw $s1, 8($sp) # string:
+	lw $t0, 12($sp)
+	lw $t1, 16($sp) # 
+	lw $t2, 20($sp) # 
+
+	addi $sp,$sp,32
+	jr $ra
+
+#======
+_XuatMang:
+	addi $sp,$sp,-32
+	sw $ra,($sp)
+	sw $s0, 4($sp) # n: do dai chuoi
+	sw $s1, 8($sp) # string:
+	sw $t0, 12($sp)
+	sw $t1, 16($sp) #
+	sw $t2, 20($sp) # 
+
+	#Lay tham so luu vao thanh ghi
+	move $s0, $a0 # n: do dai chuoi
+
+    	li $t0,0  # index of array
+    	li $t1, 1 # dem = 1
+
+    	li $v0,4
+	la $a0,tb3
+    	syscall
+
+_XuatMang.Lap:
+    	bgt $t1,$s0,exit1   
+    	lw $t2,array($t0)   
+
+    	li $v0,4
+    	move $a0,$t2
+    	syscall
+
+    	addi $t0,$t0,4 
+    	addi $t1,$t1,1 
+    	j _XuatMang.Lap
+
+exit1:
+	#Restore
+	lw $ra,($sp)
+	lw $s0, 4($sp) # n: do dai chuoi
+	lw $s1, 8($sp) # string:
+	lw $t0, 12($sp)
+	lw $t1, 16($sp) # 
+	lw $t2, 20($sp) # 
+
+	addi $sp,$sp,32
+	jr $ra
