@@ -1,0 +1,194 @@
+.data
+
+	Array: .space 1024
+	tb1: .asciiz "Nhap n: "
+	tb2: .asciiz "a["
+	tb3: .asciiz "]= " 
+	tb5: .asciiz "Mang vua nhap la: "
+	tb4: .asciiz "\nMang sau khi sap xep la: "
+	n: .word 0
+.text
+main:
+	#Truyen tham so
+	la $a0,n
+	la $a1,Array
+	
+	#Goi ham nhapmang
+	jal _Nhapmang	
+	
+	#Xuat tb5
+	li $v0,4
+	la $a0,tb5
+	syscall
+	
+	#Truyen tham so
+	lw $a0,n
+	la $a1,Array
+
+	#Goi ham xuatmang
+	jal _Xuatmang
+
+	
+#====== Ham Sap Xep Mang Giam Dan ========	
+_SapXepMang:    
+    	la  $t0, Array
+	li $t6, 4
+	move $s0,$a0
+	sub $s0,$s0,1 
+	mult $s0,$t6
+	mflo $s1   
+	add $t0, $t0, $s1                                           
+LapNgoai:             
+	add $t1, $0, $0    
+	la  $a0, Array     
+LapTrong:               
+	lw  $t2, 0($a0)        
+	lw  $t3, 4($a0)       
+	slt $t5, $t2, $t3      
+	beq $t5, $0, TiepTuc  
+	add $t1, $0, 1          
+	sw  $t2, 4($a0)        
+	sw  $t3, 0($a0)        
+TiepTuc:
+	addi $a0, $a0, 4         
+	bne  $a0, $t0, LapTrong    
+	bne  $t1, $0, LapNgoai
+
+
+	#Xuat tb4
+	li $v0,4
+	la $a0,tb4
+	syscall
+	
+	#Truyen tham so
+	lw $a0,n
+	la $a1,Array
+
+	#Goi ham xuatmang
+	jal _Xuatmang
+	
+	
+	
+	#Ket thuc
+	li $v0,10
+	syscall
+
+#====== Ham Nhap Mang =======
+#Dau thu tuc
+_Nhapmang:
+	addi $sp,$sp,-32
+	sw $ra,($sp)
+	sw $s0,4($sp)
+	sw $s1,8($sp)
+	sw $t0,12($sp)
+	sw $t1,16($sp)
+
+	#Lay tham so luu vao thanh ghi
+	move $s0,$a0
+	move $s1,$a1
+
+#Than thu tuc
+	#Xuat tb1
+	li $v0,4
+	la $a0,tb1
+	syscall
+	
+	#Nhap so nguyen
+	li $v0,5
+	syscall
+	
+	#Luu vao n tai $s0
+	sw $v0,($s0)
+
+	#Load gia tri
+	lw $s0,($s0)
+	
+	#Khoi tao vong lap
+	li $t0,0  #i = 0
+_Nhapmang.Lap:
+	#Xuat tb2
+	li $v0,4
+	la $a0,tb2
+	syscall
+
+	#Xuat i
+	li $v0,1
+	move $a0,$t0
+	syscall
+	
+	#Xuat tb3
+	li $v0,4
+	la $a0,tb3
+	syscall
+
+	#Xuat so nguyen
+	li $v0,5
+	syscall
+	
+	#Luu vao a[i] tai $s1
+	sw $v0,($s1)
+	
+	#Tang dia chi
+	addi $s1,$s1,4
+
+	#Tang chi so i
+	addi $t0,$t0,1
+	
+	#Kiem tra i < n thi lap
+	slt $t1,$t0,$s0
+	beq $t1,1,_Nhapmang.Lap
+
+#Cuoi thu tuc
+	#Restore
+	lw $ra,($sp)
+	lw $s0,4($sp)
+	lw $s1,8($sp)
+	lw $t0,12($sp)
+	lw $t1,16($sp)
+
+	#Xoa stack
+	addi $sp,$sp,32
+	
+	#Tra ve
+	jr $ra
+
+#===== Xuat mang =====
+#Dau thu tuc:
+_Xuatmang:
+	addi $sp,$sp,-32
+	sw $ra,($sp)
+	sw $s0,4($sp)
+	sw $s1,8($sp)
+	sw $t0,12($sp)
+	sw $t1,16($sp)
+
+	#Lay tham so luu vao thanh ghi
+	move $s0,$a0
+	move $s1,$a1
+
+#Than thu tuc:
+	#Khoi tao vong lap
+	li $t0,0 # i = 0
+_Xuatmang.Lap:
+
+	#Xuat a[i]
+	li $v0,1
+	lw $a0,($s1)
+	syscall
+	
+	#Xuat khoang trang
+	li $v0,11
+	la $a0,' '
+	syscall
+
+	#Tang dia chi mang
+	addi $s1,$s1,4
+	
+	#Tang i
+	add $t0,$t0,1
+
+	#Kiem tra i < n thi lap
+	slt $t1,$t0,$s0	
+	beq $t1,1,_Xuatmang.Lap
+        
+        jr   $ra
