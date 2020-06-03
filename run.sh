@@ -1,0 +1,1 @@
+java -jar mars/mars.jar main.asm
