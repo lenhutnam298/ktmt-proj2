@@ -5,7 +5,7 @@
 	# test case.
 	test:	.asciiz "apple"
 	# Ve bang
-	promt_draw0: .asciiz "\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+	promt_draw0: .asciiz "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
 	promt_draw01: .asciiz "\n\n\n"
 	promt_draw1: .asciiz "\n\nNhap n: "
 	promt_draw2: .asciiz "  ______"
@@ -38,7 +38,7 @@
 	promt_error.invalid_mainmenu: .asciiz "lua chon chi co the la: \n0. Exit\n1. Play\n2. Change name\n3. Show top 10\n"
 	promt_error.invalid_top: .asciiz "lua chon chi co the la:\nY: co\nN: khong"
 	promt_scanWord: .asciiz "Nhap tu: "
-	promt_guessing1: .asciiz "Nhap cach doan tu: "
+	promt_guessing1: .asciiz "1. Doan ky tu\n2. Doan tu\nNhap cach doan tu: "
 	promt_score: .asciiz "Score: "
 	#
 	Score: 		.word 0
@@ -2148,7 +2148,6 @@ Ve4:
 	la	$a0,guessword
 	jal 	_print_guessword
 
-	
 
 	# Tuyen tham so
 	la	$a0,test
@@ -2165,7 +2164,6 @@ _Hangman.Lost:
 	la	$a0,guessword
 	addi	$a1,$zero,'-'
 	jal 	_count_different_char_in_word
-	add 	$t2,$t2,$v0
 
 	addi 	$t0,$zero,7
 	jal	_failSound
@@ -2174,8 +2172,7 @@ _Hangman.Lost:
 _Hangman.Wrongchar:
 	la	$a0,guessword
 	addi	$a1,$zero,'-'
-	jal 	_count_different_char_in_word
-	add	$t2,$t2,$v0	
+	jal 	_count_different_char_in_word	
 
 	#i = i + 1
 	addi 	$t0,$t0,1
@@ -2190,7 +2187,10 @@ _Hangman.changeWord:
 	la	$a0,guessword
 	addi	$a1,$zero,'-'
 	jal 	_count_different_char_in_word
-	add 	$t2,$t2,$v0
+
+	la	$a0,test
+	jal	_strlen
+	sw	$v0,Score
 
 	jal	_generate_word
 	beq	$v0,0,KetThuc
@@ -2210,8 +2210,6 @@ KetThuc:
 	li 	$v0,4
 	la 	$a0, promt_draw12
 	syscall
-
-	sw	$t2,Score
 
 	jal	_endSound
 	#Restore
