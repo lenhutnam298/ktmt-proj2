@@ -158,14 +158,15 @@ main.show_top10.exit:
 	la	$a0,promt_menu4
 	li	$v0,4
 	syscall
-	la	$v0,12
-	syscall
 	
 	li	$a0,'\n'
 	la	$v0,11
 	syscall
 	li	$a0,'\n'
 	la	$v0,11
+	syscall
+
+	la	$v0,12
 	syscall
 
 	beq	$v0,'Y',main.menu
@@ -393,14 +394,14 @@ _check_Marked.true:
 	addi	$v0,$zero,1
 # CUOI THU TUC:
 _check_Marked.exit:	
-	sw	$t9,0($sp)	# throw
-	sw	$ra,4($sp)
-	sw	$s0,8($sp) 	# num
-	sw	$s1,12($sp)	# Marked
-	sw	$t1,16($sp)	# num in Marked
-	sw	$s2,20($sp)	# N of Marked (address)
-	sw	$t2,24($sp)	# N of Marked (value)
-	sw	$t0,28($sp)	# count i
+	lw	$t9,0($sp)	# throw
+	lw	$ra,4($sp)
+	lw	$s0,8($sp) 	# num
+	lw	$s1,12($sp)	# Marked
+	lw	$t1,16($sp)	# num in Marked
+	lw	$s2,20($sp)	# N of Marked (address)
+	lw	$t2,24($sp)	# N of Marked (value)
+	lw	$t0,28($sp)	# count i
 	addi	$sp,$sp,28
 	jr	$ra
 ####################################################################################
@@ -2210,6 +2211,8 @@ KetThuc:
 	syscall
 
 	sw	$t2,Score
+
+	jal	_endSound
 	#Restore
 	lw	$t9,($sp)
 	lw 	$ra,4($sp)
