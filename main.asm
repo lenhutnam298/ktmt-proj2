@@ -1,7 +1,7 @@
 .data
 	# file location
-	myfin: .asciiz "data/input.txt"
-	myfout: .asciiz "data/output.txt"
+	myfin: .asciiz "data/test.txt"
+	myfout: .asciiz "data/rtest.txt"
 	# test case.
 	test:	.asciiz "apple"
 	# Ve bang
@@ -20,8 +20,11 @@
 	promt_draw11: .asciiz "\n  | / \\"
 	promt_draw12: .asciiz "\n\n GAME OVER "
 	# Menu
-	promt_menu0: .asciiz "		MENU\n0. Exit\n1. Play\n2. Change name\n3. Show top 10\n"
+	promt_menu0: .asciiz "		MAIN MENU\n0. Exit\n1. Play\n2. Change name\n3. Show top 10\n"
 	promt_menu1: .asciiz "Nhap lua chon: "
+	promt_menu2: .asciiz "		\nMENU\n0. Exit\n1. Return to MAIN MENU\n2. Play again\n"
+	promt_menu3: .asciiz "		\n TOP 10\n"
+	promt_menu4: .asciiz "Return to MAIN MENU(Y/N): "
 	# Bang thong bao:
 	promt_entername: .asciiz "Nhap ten: "
 	promt_name: .asciiz "Ten nguoi choi: "
@@ -31,31 +34,59 @@
 	promt_error.invalid_entername: .asciiz "Ten khong duoc co ki tu dac biet \n{cac ki tu phai nam trong khoang (0-9)(a-z)(A-Z)}" 
 	promt_error.invalid_word: .asciiz "Tu khong duoc co ki tu dac biet \n{cac ki tu phai nam trong khoang (0-9)(a-z)(A-Z)}"
 	promt_error.invalid_char: .asciiz "Ki tu khong duoc la ki tu dac biet \n{cac ki tu phai nam trong khoang (0-9)(a-z)(A-Z)}"	
-	promt_error.invalid_menu: .asciiz "lua chon chi co the la \n0. Exit\n1. Play\n2. Change name\n3. Show top 10\n"
+	promt_error.invalid_menu: .asciiz "Lua chon chi co the la:\n0. Exit\n1. Return to MAIN MENU\n2. Play again\n"
+	promt_error.invalid_mainmenu: .asciiz "lua chon chi co the la: \n0. Exit\n1. Play\n2. Change name\n3. Show top 10\n"
+	promt_error.invalid_top: .asciiz "lua chon chi co the la:\nY: co\nN: khong"
 	promt_scanWord: .asciiz "Nhap tu: "
-	promt_guessing1: .asciiz "Nhap cach doan tu: "
+	promt_guessing1: .asciiz "1. Doan ky tu\n2. Doan tu\nNhap cach doan tu: "
 	promt_score: .asciiz "Score: "
-	# 
-	N: .word 0
-	buffer: .space 1024
-	str:	.space	50
-	guessword: .space 50
-	inputstr: .space 50
-	Name: .space 30
-	guessed: .space 50
+	#
+	Score: 		.word 0
+	N: 		.word 0
+	Nplayer: 	.word 0
+	Marked.N: .word 0
+	
+	buffer: 	.space 1024
+	buffer2: 	.space 2048
+	score_name:	.space 50
+	string: 	.space 50
+	str:		.space	50
+	guessword: 	.space 50
+	inputstr: 	.space 50
+	Name: 		.space 30
+	guessed: 	.space 50
+	temp:		.space 50
+	player:		.space 50
+	StrScore: 	.space 50
+	ArrPosi:	.space	200
+	Marked:		.space 100
 .text
 
 # ==================== MAIN ============================================================ #
 main:	
-	jal	_enter_player_name
-	li	$v0,4
-	la	$a0,Name
+	li	$v0, 13       	# system call for open file
+	la   	$a0, myfout     # board file name
+	li   	$a1, 0          # flag for reading
+	li   	$a2, 0          # mode is ignored
+	syscall            # open a file (file descriptor returned in $v0)
+	move 	$s0, $v0      # save the file descriptor 
+
+	li 	$v0, 14 # open file
+	move 	$a0,$s0
+	la 	$a1, buffer2
+	li 	$a2, 1024
 	syscall
+
+	li 	$v0, 16 # close file
+	move 	$a0, $s0
+	syscall	
 	
+	jal	_enter_player_name	
 	li	$v0,11	
 	addi	$a0,$zero,'\n'
 	syscall
 main.menu:
+
 	la	$v0,4
 	la	$a0,promt_menu0
 	syscall
@@ -79,7 +110,7 @@ main.menu:
 	j	main.call
 main.error:
 	li 	$v0,55
-	la 	$a0,promt_error.invalid_menu
+	la 	$a0,promt_error.invalid_mainmenu
 	li 	$a1 ,1
 	syscall
 
@@ -91,10 +122,170 @@ main.call:
 	beq  	$t0,'0',_stop_runing
 	beq 	$t0,'1',main.callPlay
 	beq 	$t0,'2',main
-	beq 	$t0,'3',_stop_runing
+	beq 	$t0,'3',main.show_top10
 	j _stop_runing
+main.show_top10:
+
+	li	$v0, 13       	# system call for open file
+	la   	$a0, myfout     # board file name
+	li   	$a1, 1          # flag for reading
+	li   	$a2, 0          # mode is ignored
+	syscall            # open a file (file descriptor returned in $v0)
+	move 	$s6, $v0      # save the file descriptor 
+
+	la	$a0,buffer2
+	jal	_strlen
+	move	$t0,$v0
+
+	addi	$t0,$t0,1
+
+	move 	$a0, $s6 
+    	li 	$v0, 15
+    	la 	$a1, buffer2
+    	move 	$a2, $t0 	# length
+    	syscall
+
+    	li $v0, 16  
+    	syscall
+
+	la	$a0,promt_menu3
+	li	$v0,4
+	syscall	
+	jal	_sort
+	jal	_top_10
+
+main.show_top10.exit:
+	la	$a0,promt_menu4
+	li	$v0,4
+	syscall
+	
+	li	$a0,'\n'
+	la	$v0,11
+	syscall
+	li	$a0,'\n'
+	la	$v0,11
+	syscall
+
+	la	$v0,12
+	syscall
+
+	beq	$v0,'Y',main.menu
+	beq	$v0,'N',_stop_runing
+main.show_top10.error:
+	li 	$v0,55
+	la 	$a0,promt_error.invalid_menu
+	li 	$a1 ,1
+	syscall
+
+	li 	$v0,4
+	la 	$a0,promt_error.invalid
+	syscall
+	j	main.show_top10.exit
+
 main.callPlay:
 	jal	Play
+	
+	lw	$a0,Score
+	la	$a1,StrScore
+	jal	_to_string
+
+	la	$a0,StrScore
+	li	$a1,'-'
+	la	$a2,Name
+	la	$a3,score_name
+	jal	_union_string
+
+	la	$a0,buffer2
+	li	$a1,'\0'
+	la	$a2,score_name
+	la	$a3,buffer2
+	jal	_union_string
+	
+	la	$a0,buffer2
+	jal	_strlen
+	move	$t0,$v0
+
+	addi	$t1,$zero,'*'
+	sb	$t1,buffer2($t0)
+	addi	$t0,$t0,1
+	addi	$t1,$zero,'\0'
+	sb	$t1,buffer2($t0)
+
+	li	$v0,4
+	la	$a0,promt_name
+	syscall
+	li	$v0,4
+	la	$a0,Name
+	syscall
+	li	$v0,11
+	li	$a0,'\n'
+	syscall
+	li	$v0,4
+	la	$a0,promt_score
+	syscall
+
+	lw	$a0,Score
+	li	$v0,1
+	syscall
+	
+main.callPlay.menu:
+
+	li	$v0, 13       	# system call for open file
+	la   	$a0, myfout     # board file name
+	li   	$a1, 1          # flag for reading
+	li   	$a2, 0          # mode is ignored
+	syscall            # open a file (file descriptor returned in $v0)
+	move 	$s6, $v0      # save the file descriptor 
+
+	la	$a0,buffer2
+	jal	_strlen
+	move	$t0,$v0
+
+	addi	$t0,$t0,1
+
+	move 	$a0, $s6 
+    	li 	$v0, 15
+    	la 	$a1, buffer2
+    	move 	$a2, $t0 	# length
+    	syscall
+
+	la	$v0,4
+	la	$a0,promt_menu2
+	syscall
+
+	la	$v0,4
+	la	$a0,promt_menu1
+	syscall
+
+	li	$v0,12
+	syscall
+	move 	$t0,$v0
+	li	$v0,11	
+	addi	$a0,$zero,'\n'
+	syscall
+
+	addi	$t1,$zero,'0'
+	blt	$t0,$t1,main.callPlay.error
+	addi	$t1,$zero,'2'
+	bgt	$t0,$t1,main.callPlay.error
+	
+	beq  	$t0,'0',_stop_runing
+	beq 	$t0,'1',main.menu
+	beq 	$t0,'2',main.callPlay
+
+	j _stop_runing
+
+main.callPlay.error:
+	li 	$v0,55
+	la 	$a0,promt_error.invalid_top
+	li 	$a1 ,1
+	syscall
+
+	li 	$v0,4
+	la 	$a0,promt_error.invalid
+	syscall
+	j	main.callPlay.menu
+
 	j _stop_runing
 # ==================== UNITY ============================================================ #
  
@@ -160,6 +351,60 @@ _check_in_word.end_loop:
 	# 
 	jr 	$ra	
 ######################################################################################################
+###########################################################################
+# ==	bool _check_Marked(int num) -----------------------------------
+# 	- input :
+#	  + @param 	$a0 = num (int)
+#	- output
+#	  + @return 0: num is in Marked
+#	  + @return 1: num is not in Marked
+_check_Marked:
+# DAU THU TUC:
+	addi	$sp,$sp,-28
+	sw	$t9,0($sp)	# throw
+	sw	$ra,4($sp)
+	sw	$s0,8($sp) 	# num
+	sw	$s1,12($sp)	# Marked
+	sw	$t1,16($sp)	# num in Marked
+	sw	$s2,20($sp)	# N of Marked (address)
+	sw	$t2,24($sp)	# N of Marked (value)
+	sw	$t0,28($sp)	# count i
+
+	move	$s0,$a0	
+	move	$s1,$a1
+	move	$s2,$a2
+
+	lw	$t2,($s2)
+	addi	$t0,$zero,0
+# THAN THU TUC:
+	beq	$t2,0,_check_Marked.false
+_check_Marked.loop:
+	lw	$t1,($s1)
+	beq	$s0,$t1,_check_Marked.true
+	addi	$t0,$t0,1
+	addi	$s1,$s1,4
+	blt	$t0,$t2,_check_Marked.loop
+_check_Marked.false:
+	addi	$t2,$t2,1
+	sw	$t2,($s2)
+	sw	$s0,($s1)
+	addi	$v0,$zero,0
+	j 	_check_Marked.exit	
+_check_Marked.true:
+	addi	$v0,$zero,1
+# CUOI THU TUC:
+_check_Marked.exit:	
+	lw	$t9,0($sp)	# throw
+	lw	$ra,4($sp)
+	lw	$s0,8($sp) 	# num
+	lw	$s1,12($sp)	# Marked
+	lw	$t1,16($sp)	# num in Marked
+	lw	$s2,20($sp)	# N of Marked (address)
+	lw	$t2,24($sp)	# N of Marked (value)
+	lw	$t0,28($sp)	# count i
+	addi	$sp,$sp,28
+	jr	$ra
+####################################################################################
 
 ######################################################################################################
 # == bool _check_exist(char: char, string: str) ------------------------------------------
@@ -267,7 +512,7 @@ _check_input_valid.exit:
 # - use for:	check  whether or not $a0 is in (0-9)(a-z)(A-Z) 
 _check_valid_word:
 # DAU THU TUC:
-	add	$sp,$sp,-16
+	addi	$sp,$sp,-16
 	sw	$t9,0($sp)
 	sw	$ra,4($sp)
 	sw	$s0,8($sp)	# Str (string)
@@ -301,9 +546,11 @@ _check_valid_word.exit:
 	lw	$s0,8($sp)	# Str (string)
 	lw	$t0,12($sp)
 	lw	$t1,16($sp)	# temp
-	add	$sp,$sp,16
+	addi	$sp,$sp,16
 	jr 	$ra
 ######################################################################################################
+
+# -------------------- STRING AND ARRAY TOOLS ------------------------------------------------------------ #
 
 ######################################################################################################
 # == int _strcmp(string: inputStr, string: sourceStr) ------------------------------------------
@@ -368,6 +615,218 @@ _strcmp.exit:
 ######################################################################################################
 
 ######################################################################################################
+# == void _union_string(string str1,char char,string str2,string result) -------------------------------------------------
+
+# - input :
+#	 + @param 	$a0 = str1 (string)
+#	 + @param 	$a1 = char (char)
+#	 + @param 	$a2 = str2 (string)
+#	 + @param 	$a3 = result (string)
+# use for: 	union string and string
+_union_string:
+# DAU THUC TUC:
+	addi	$sp, $sp, -32
+	sw	$t9,0($sp)	# throw
+	sw	$ra,4($sp)
+	sw	$s0,8($sp)	# str1
+
+	sw	$s1,12($sp)	# char
+	sw	$s2,16($sp)	# str2
+	sw	$s3,20($sp)	# result
+
+	sw	$t0,24($sp)	# byte in $a0
+	sw	$t2,28($sp)	# byte in $a2
+	sw	$t3,32($sp)	# byte in $a3
+
+	move	$s0,$a0
+	move	$s1,$a1
+	move	$s2,$a2
+	move	$s3,$a3
+
+	lb	$t0,($s0)
+	lb	$t2,($s2)
+
+# THAM THUC TUC:
+_union_string.specialcase:
+	lb	$t0,($s0)
+	beqz	$t0,_union_string.loop2
+_union_string.loop1:
+	lb	$t0,($s0)
+	beqz	$t0,_union_string.connect
+	sb	$t0,($s3)
+	addi	$s0,$s0,1
+	addi	$s3,$s3,1
+	j	_union_string.loop1
+_union_string.connect:	
+	beqz	$s1,_union_string.loop2
+	sb	$s1,($s3)
+	addi	$s3,$s3,1
+_union_string.loop2:
+	lb	$t2,($s2)
+	beqz	$t2,_union_string.exit
+	sb	$t2,($s3)
+	addi	$s2,$s2,1
+	addi	$s3,$s3,1
+	j	_union_string.loop2
+_union_string.exit:
+	addi	$t3,$zero,'\0'
+	sb	$t3,($s3)
+# CUOI THUC TUC:
+
+	lw	$t9,0($sp)	# throw
+	lw	$ra,4($sp)
+	lw	$s0,8($sp)	# str1
+
+	lw	$s1,12($sp)	# char
+	lw	$s2,16($sp)	# str2
+	lw	$s3,20($sp)	# result
+
+	lw	$t0,24($sp)	# byte in $a0
+	lw	$t2,28($sp)	# byte in $a2
+	lw	$t3,32($sp)	# byte in $a3
+	addi	$sp,$sp,32
+	jr	$ra
+######################################################################################################
+
+######################################################################################################
+# == int _str_to_num:(string: str) ------------------------------------------
+# 	- input :
+#	  + @param 	$a0 = str (string)
+#	- output :
+#	  + @return int form of string $a0 
+
+
+_str_to_num:
+# DAU THU TUC:
+	addi	$sp,$sp,-32
+	sw	$t9,0($sp)	# throw
+	sw	$ra,4($sp)	
+	sw	$s0,8($sp)	# str	(string)
+	sw	$s1,12($sp)	# num
+	sw	$t0,16($sp)	# byte of $s0
+	sw	$t1,20($sp)	# count i = N - 1 with N is the length of $s0
+	sw	$t2,24($sp)	# num form of $t0
+	sw	$t3,28($sp)	# multiplier
+	sw	$t4,32($sp)	# 10
+	move	$s0,$a0
+	
+	addi	$s1,$zero,0
+	addi	$t3,$zero,1
+	addi	$t4,$zero,10
+# THAN THU TUC:
+	move	$a0,$s0
+	jal	_strlen
+	move	$t1,$v0
+
+	addi	$t1,$t1,-1
+	add	$s0,$s0,$t1
+	
+_str_to_num.loop:
+	blt	$t1,0,_str_to_num.exit
+	lb	$t0,($s0)
+	sub	$t2,$t0,'0'
+	mult	$t2,$t3
+	mflo	$t2
+	add	$s1,$s1,$t2
+
+	mult	$t3,$t4
+	mflo	$t3
+
+	addi	$t1,$t1,-1
+	addi	$s0,$s0,-1
+	
+	j	_str_to_num.loop
+
+# CUOI THU TUC:
+_str_to_num.exit:
+	move	$v0,$s1
+	lw	$t9,0($sp)	# throw
+	lw	$ra,4($sp)	
+	lw	$s0,8($sp)	# str	(string)
+	lw	$s1,12($sp)	# num
+	lw	$t0,16($sp)	# byte of $s0
+	lw	$t1,20($sp)	# count i = N - 1 with N is the length of $s0
+	lw	$t2,24($sp)	# num form of $t0
+	lw	$t3,28($sp)	# multiplier
+	lw	$t4,32($sp)	# 10
+	addi	$sp,$sp,32
+	jr	$ra
+
+######################################################################################################
+
+
+######################################################################################################
+# == void _to_string(int num,string str) -------------------------------------------------
+
+# - input :
+#	 + @param 	$a0 = num (int)
+# use for: 	take string form of $a0 
+# DAU THUC TUC:
+_to_string:
+	addi	$sp, $sp, -32
+	sw	$t9,0($sp)
+	sw	$ra,4($sp)
+	sw	$s0,8($sp)	# num	
+	sw	$s1,12($sp)	# byte
+	sw	$t1,16($sp)	# temp
+	sw	$t2,20($sp)	# 10	|	byte in $s2
+	sw	$t3,24($sp)	# '0'
+	sw	$t0,28($sp)	# count i
+
+	sw	$s2,32($sp)	# str
+
+	move	$s0,$a0
+	move	$s2,$a1
+
+	addi	$t0,$zero,0
+	addi	$t2,$zero,10
+	addi	$t3,$zero,'0'
+# THAN THUC TUC:
+_to_string.specialcase:
+	bnez	$s0,_to_string.loop1
+	addi	$t1,$zero,'0'
+	sb	$t1,($s2)
+	addi	$s2,$s2,1
+	j	_to_string.exit	
+_to_string.loop1:
+	beqz	$s0,_to_string.reverse
+	div	$s0,$t2
+	mfhi	$t1
+	mflo	$s0
+	add	$s1,$t3,$t1
+	sb	$s1,string($t0)
+	addi	$t0,$t0,1
+	j	_to_string.loop1
+_to_string.reverse:	
+	addi	$t0,$t0,-1
+_to_string.loop2:
+	blt 	$t0,0,_to_string.exit
+	lb	$t1,string($t0)
+	sb	$t1,($s2)
+	addi	$t0,$t0,-1
+	addi	$s2,$s2,1
+	j	_to_string.loop2
+
+_to_string.exit:
+# CUOI THUC TUC:
+	addi	$t1,$zero,'\0'
+	sb	$t1,($s2)
+
+	lw	$t9,0($sp)
+	lw	$ra,4($sp)
+	lw	$s0,8($sp)	# num	
+	lw	$s1,12($sp)	# byte
+	lw	$t1,16($sp)	# temp
+	lw	$t2,20($sp)	# 10	|	byte in $s2
+	lw	$t3,24($sp)	# '0'
+	lw	$t0,28($sp)	# count i
+	lw	$s2,32($sp)	# str
+	addi	$sp, $sp, -32
+	jr	$ra
+
+######################################################################################################
+
+######################################################################################################
 # == int _strlen(string: inputword) -------------------------------------------------
 # 	- input :
 #	  + @param 	$a0 = inputword (string)
@@ -375,10 +834,11 @@ _strcmp.exit:
 #	  + @return : 	the length of string (int)
 
 _strlen:
-	addi	$sp, $sp, -8
-	sw	$ra, ($sp)
-	sw	$s0, 4($sp)	# inputword	
-	sw	$t0, 8($sp)	# count
+	addi	$sp, $sp, -12
+	sw	$t9,0($sp)
+	sw	$ra,4($sp)
+	sw	$s0,8($sp)	# inputword	
+	sw	$t0,12($sp)	# count
 	
 	# initialization
 	move 	$s0, $a0	# inputword
@@ -394,11 +854,13 @@ _strlen.test:
 _strlen.exit:
 	move 	$v0, $t0
 
-	lw	$ra, ($sp)
-	lw	$s0, 4($sp)		
-	lw	$t0, 8($sp)	
-	addi	$sp, $sp, 8
+	lw	$t9,0($sp)
+	lw	$ra,4($sp)
+	lw	$s0,8($sp)	# inputword	
+	lw	$t0,12($sp)	# count
+	addi	$sp, $sp, 12
 	jr 	$ra
+
 ######################################################################################################
 
 ######################################################################################################
@@ -451,7 +913,7 @@ _strcopy.exit:
 
 _uncaplock:
 # DAU THU TUC:
-	add	$sp,$sp,-16
+	addi	$sp,$sp,-16
 	sw	$t9,0($sp)
 	sw	$ra,4($sp)
 	sw	$s0,8($sp)	# Str (string)
@@ -483,7 +945,7 @@ _uncaplock.exit:
 	lw	$s0,8($sp)	# Str (string)
 	lw	$t0,12($sp)
 	lw	$t1,16($sp)	# temp
-	add	$sp,$sp,16
+	addi	$sp,$sp,16
 	jr 	$ra
 ######################################################################################################
 
@@ -905,6 +1367,234 @@ _scan.exit:
 
 # -------------------- PREPARE ------------------------------------------------------------ #
 
+###############################################################################
+# == void _top_10() ------------------------------------------
+# 	use for: print top10 player
+_top_10:
+# DAU THU TUC:
+	addi	$sp,$sp,-24
+	sw	$t9,0($sp)
+	sw	$ra,4($sp)
+	sw	$t0,8($sp)	# count i
+	sw	$t1,12($sp)	# temp
+	sw	$t2,16($sp)	# 4
+	sw	$s0,20($sp)	# N
+	sw	$t4,24($sp)
+
+	addi	$t0,$zero,0
+	addi	$t2,$zero,4
+	lw	$s0,Nplayer
+#	lw	$s0,($s0)
+# THAN THU TUC:
+_top_10.loop:
+	bge	$t0,$s0,_top_10.exit
+	mult	$t0,$t2
+	mflo	$t1
+	lw	$t4,ArrPosi($t1)
+	la	$a0,buffer2
+	move	$a1,$t4
+	la	$a2,player
+	jal	_get_array_I
+	la	$a0,player
+	jal 	_print_guessword
+	addi	$t0,$t0,1
+	j	_top_10.loop
+_top_10.exit:
+# CUOI THU TUC:
+		
+	lw	$t9,0($sp)
+	lw	$ra,4($sp)
+	lw	$t0,8($sp)	# count i
+	lw	$t1,12($sp)	# temp
+	lw	$t2,16($sp)	# 4
+	lw	$s0,20($sp)	# N
+	lw	$t4,24($sp)
+	addi	$sp,$sp,24
+	jr	$ra
+###############################################################################
+
+###############################################################################
+# == void _sort() ------------------------------------------
+# 	use for: sort form high to low
+_sort:
+# DAU THU TUC:
+	addi	$sp,$sp,-56
+	sw	$t9,0($sp)
+	sw	$ra,4($sp)
+	sw	$s0,8($sp)	
+	sw	$t0,12($sp)	# bit of buffer2 | count l
+	sw	$s1,16($sp)	# N(buffer2)
+	sw	$t1,20($sp)	# count k	| A[l].posi
+
+	sw	$s2,24($sp)	# A[i].score
+	sw	$s3,28($sp)	# A[j].score
+	sw	$t2,32($sp)	# count i
+	sw	$t3,36($sp)	# count j
+	sw	$s4,40($sp)	# end of i
+	sw	$s5,44($sp)	# end of j
+
+	sw	$t4,48($sp)	# temp1
+	sw	$t5,52($sp)	# temp2
+	
+	sw	$t6,56($sp)
+	
+	addi	$t5,$zero,4
+# THAN THU TUC:
+_sort.countN:
+	addi	$s1,$zero,0	# N(buffer2)
+	addi	$t1,$zero,0	# count i
+_sort.countN.loop:
+	lb	$t0,buffer2($t1)
+	beq	$t0,'\0',_sort.setposi
+	beq	$t0,'*',_sort.countN.inc_N
+	addi	$t1,$t1,1
+	j	_sort.countN.loop
+_sort.countN.inc_N:
+	addi	$s1,$s1,1
+	addi	$t1,$t1,1
+	j	_sort.countN.loop
+_sort.setposi:
+	sw	$s1,Nplayer
+	addi	$t6,$zero,0
+	la	$t1,ArrPosi
+_sort.setposi.loop:
+	bge	$t6,$s1,_sort.bubble
+	sw	$t6,($t1)
+	addi	$t6,$t6,1
+	addi	$t1,$t1,4
+	j	_sort.setposi.loop
+	
+
+_sort.bubble:
+	addi	$t2,$zero,0
+	addi	$s4,$s1,-1
+
+_sort.outloop:
+	addi	$t3,$zero,0
+	addi	$s5,$s1,-1
+	sub	$s5,$s5,$t2
+
+_sort.inloop:
+	mult	$t3,$t5		# a[j]
+	mflo	$t4
+	lw	$s2,ArrPosi($t4)
+	la	$a0,buffer2
+	move	$a1,$s2
+	la	$a2,player
+	jal	_get_array_I
+	la	$a0,player
+	jal	_get_player_score
+	move	$s2,$v0
+
+
+	addi	$t0,$t3,1	# a[j+1]
+	mult	$t0,$t5
+	mflo	$t4
+	lw	$s3,ArrPosi($t4)
+	la	$a0,buffer2
+	move	$a1,$s3
+	la	$a2,player
+	jal	_get_array_I
+	la	$a0,player
+	jal	_get_player_score
+	move	$s3,$v0
+	
+	blt	$s3,$s2,_sort.inloop.inc
+_sort.swap:
+
+	mult	$t3,$t5
+	mflo	$t4
+	lw	$s2,ArrPosi($t4)
+
+	mult	$t0,$t5
+	mflo	$t4
+	lw	$s3,ArrPosi($t4)
+	##########################
+	mult	$t0,$t5
+	mflo	$t4
+	sw	$s2,ArrPosi($t4)
+
+	mult	$t3,$t5
+	mflo	$t4
+	sw	$s3,ArrPosi($t4)
+	
+_sort.inloop.inc:
+	addi	$t3,$t3,1
+	blt	$t3,$s5,_sort.inloop
+
+	addi	$t2,$t2,1
+	blt	$t2,$s4,_sort.outloop
+
+# CUOI THU TUC:
+
+	lw	$t9,0($sp)
+	lw	$ra,4($sp)
+	lw	$s0,8($sp)	
+	lw	$t0,12($sp)	# bit of buffer2 | count l
+	lw	$s1,16($sp)	# N(buffer2)
+	lw	$t1,20($sp)	# count k	| A[l].posi
+
+	lw	$s2,24($sp)	# A[i].score
+	lw	$s3,28($sp)	# A[j].score
+	lw	$t2,32($sp)	# count i
+	lw	$t3,36($sp)	# count j
+	lw	$s4,40($sp)	# end of i
+	lw	$s5,44($sp)	# end of j
+
+	lw	$t4,48($sp)	# temp
+	lw	$t5,52($sp)	# temp2
+
+	lw	$t6,56($sp)
+	addi	$sp,$sp,56
+	jr	$ra
+
+
+###############################################################################
+
+###############################################################################
+# == int _get_player_score(string: str) ------------------------------------------
+# 	- input :
+#	  + @param 	$a0 = str (string)
+#	- output :
+#	  + @return player score in str (int)
+_get_player_score:
+# DAU THU TUC:
+	addi	$sp,$sp,-16
+	sw	$t9,0($sp)
+	sw	$ra,4($sp)
+	sw	$s0,8($sp)	# str (string)
+	sw	$t0,12($sp)	# bit in str
+	sw	$s1,16($sp)	# store score
+
+	move	$s0,$a0
+	la	$s1,temp
+# THAN THU TUC:
+_get_player_score.loop:
+	lb	$t0,($s0)
+	beq	$t0,'-',_get_player_score.get_score
+	sb	$t0,($s1)
+	addi	$s0,$s0,1
+	addi	$s1,$s1,1
+	j	_get_player_score.loop
+
+_get_player_score.get_score:
+
+	addi	$t0,$zero,'\0'
+	sb	$t0,($s1)
+
+	la	$a0,temp
+	jal	_str_to_num
+
+# CUOI THU TUC:
+	lw	$t9,0($sp)
+	lw	$ra,4($sp)
+	lw	$s0,8($sp)	# str (string)
+	lw	$t0,12($sp)	# bit in str
+	lw	$s1,16($sp)	# store score
+	addi	$sp,$sp,16
+	jr	$ra
+######################################################################################################
+
 ######################################################################################################
 # == void generate_guessword(string: word,string: guessword) ------------------------------------
 # 	- input :
@@ -1296,14 +1986,10 @@ _generate_word:
 	sw	$s0,24($sp)	# number of guessed word
 	sw	$t2,28($sp)	# temp2# 
 
-	la	$s1,N
-# THAN THU TUC:
-	lw	$s1,($s1)
 	
-	la	$a0,guessed
-	jal	_strlen
-	move	$s0,$v0
-		
+# THAN THU TUC:
+	lw	$s1,N
+	lw	$s0,Marked.N		
 	beq	$s0,$s1,_generate_word.runout
 _generate_word.random:
 	li 	$v0,42
@@ -1312,12 +1998,10 @@ _generate_word.random:
 	move	$t1,$a0
 
 _generate_word.check_random.loop:
-	addi	$t0,$zero,'0'
-	add	$t0,$t0,$t1
-	
-	la 	$a0,guessed
-	move	$a1,$t0
-	jal	_check_in_word
+	move	$a0,$t1
+	la	$a1,Marked
+	la	$a2,Marked.N
+	jal	_check_Marked
 	beq 	$v0,1,_generate_word.random
 
 _generate_word.getword:	
@@ -1327,13 +2011,6 @@ _generate_word.getword:
 	la 	$a2,test
 	jal 	_get_array_I
 	addi	$v0,$zero,1
-	
-	la	$t2,guessed
-	add	$t2,$t2,$s0
-	sb	$t0,($t2)
-	addi	$t2,$t2,1
-	addi	$t0,$zero,'\0'
-	sb	$t0,($t2)
 	
 	j	_generate_word.exit
 _generate_word.runout:
@@ -1372,6 +2049,8 @@ _Hangman:
 	#Khoi tap vong lap
 	li 	$t0, 0 #$t0 = 0
 	addi	$t2,$zero,0
+
+	jal	_startSound
 #than thu tuc
 _Hangman.Lap:
 
@@ -1489,6 +2168,7 @@ _Hangman.Lost:
 	add 	$t2,$t2,$v0
 
 	addi 	$t0,$zero,7
+	jal	_failSound
 	j _Hangman.Lap
 
 _Hangman.Wrongchar:
@@ -1503,7 +2183,7 @@ _Hangman.Wrongchar:
 	#Kiem tra i < 6
 	slti 	$t1,$t0,7
 	beq 	$t1,1,_Hangman.Lap
-
+	jal	_failSound
 	j KetThuc
 _Hangman.changeWord:
 	la	$a0,guessword
@@ -1516,7 +2196,7 @@ _Hangman.changeWord:
 	la	$a0,test
 	la	$a1,guessword
 	jal 	_generate_guessword
-
+	jal	_successSound
 	j _Hangman.Lap
 #Cuoi thu tuc
 KetThuc:
@@ -1530,7 +2210,9 @@ KetThuc:
 	la 	$a0, promt_draw12
 	syscall
 
-	move	$v0,$t2
+	sw	$t2,Score
+
+	jal	_endSound
 	#Restore
 	lw	$t9,($sp)
 	lw 	$ra,4($sp)
@@ -1549,7 +2231,7 @@ KetThuc:
 #	- Use for:	start playing process
 Play:
 # DAU THU TUC:
-	add	$sp,$sp,-12
+	addi	$sp,$sp,-12
 	sw	$t9,($sp)	# throw
 	sw	$ra,4($sp)
 	sw	$s0,8($sp)	
@@ -1590,41 +2272,233 @@ Play:
 	li	$a0,'\n'
 	syscall
 
-	li	$v0,4
-	la	$a0,promt_name
-	syscall
-
-	li	$v0,4
-	la	$a0,Name
-	syscall
-
-	li	$v0,11
-	li	$a0,'\n'
-	syscall
-
-	li	$v0,4
-	la	$a0,promt_score
-	syscall
-	
-	move	$a0,$t0
-	li	$v0,1
-	syscall
 # CUOI THU TUC
 	lw	$t9,($sp)	# throw
 	lw	$ra,4($sp)
 	lw	$s0,8($sp)
 	lw	$t0,12($sp)
-	add	$sp,$sp,12
+	addi	$sp,$sp,12
 
 	jr 	$ra
 ######################################################################################################
 
+######################################################################################################
+_startSound:
+	addi 	$sp,$sp, -24
+	sw	$t9,0($sp)
+	sw 	$ra,4($sp)
+	sw	$v0,8($sp)
+	sw	$a0,12($sp)
+	sw	$a1,16($sp)
+	sw	$a2,20($sp)
+	sw	$a3,24($sp)
+
+	li 	$v0, 33
+	li 	$a0, 60	# pitch, C#
+	li 	$a1, 1500	#duration in milisecond
+	li 	$a2, 111	#instrument (0 - 7 piano)
+	li 	$a3, 100	#volume
+	syscall
+	
+	lw	$t9,0($sp)
+	lw 	$ra,4($sp)
+	lw	$v0,8($sp)
+	lw	$a0,12($sp)
+	lw	$a1,16($sp)
+	lw	$a2,20($sp)
+	lw	$a3,24($sp)
+	addi 	$sp,$sp,24
+	jr 	$ra
+
+_failSound:
+	addi 	$sp,$sp, -24
+	sw	$t9, 0($sp)
+	sw 	$ra, 4($sp)
+	sw	$v0, 8($sp)
+	sw	$a0, 12($sp)
+	sw	$a1, 16($sp)
+	sw	$a2, 20($sp)
+	sw	$a3, 24($sp)
+	
+	li 	$v0, 33
+	li 	$a0, 60	# pitch, C#
+	li 	$a1, 2000	#duration in milisecond
+	li 	$a2, 119	#instrument (0 - 7 piano)
+	li 	$a3, 300	#volume
+	syscall	
+	
+	
+	li 	$v0, 31			
+	li	$a0, 42				
+	li	$a1, 500			
+	li	$a2, 111			
+	li	$a3, 120
+	syscall
+
+	lw	$t9, 0($sp)
+	lw 	$ra, 4($sp)
+	lw	$v0, 8($sp)
+	lw	$a0, 12($sp)
+	lw	$a1, 16($sp)
+	lw	$a2, 20($sp)
+	lw	$a3, 24($sp)
+	addi 	$sp,$sp,24
+	
+	jr 	$ra
+	
+_successSound:
+	addi 	$sp,$sp, -24
+	sw	$t9, 0($sp)
+	sw 	$ra, 4($sp)
+	sw	$v0, 8($sp)
+	sw	$a0, 12($sp)
+	sw	$a1, 16($sp)
+	sw	$a2, 20($sp)
+	sw	$a3, 24($sp)
+	
+	li 	$v0, 33
+	li 	$a0, 60	# pitch, C#
+	li 	$a1, 2000	#duration in milisecond
+	li 	$a2, 119	#instrument (0 - 7 piano)
+	li 	$a3, 300	#volume
+	syscall	
+	
+	li 	$v0, 31				
+	li	$a0, 60				
+	li	$a1, 300			
+	li	$a2, 12				
+	li	$a3, 127			
+	syscall
+	
+	li	$v0, 32
+	li	$a0, 50
+	syscall
+	
+	li 	$v0, 31				
+	li	$a0, 62				
+	li	$a1, 300			
+	li	$a2, 12				
+	li	$a3, 127			
+	syscall
+	
+	li	$v0, 32
+	li	$a0, 50
+	syscall
+	
+	li 	$v0, 31				
+	li	$a0, 64				
+	li	$a1, 300			
+	li	$a2, 12				
+	li	$a3, 127			
+	syscall	
+	
+	li	$v0, 32
+	li	$a0, 50
+	syscall
+	
+	li 	$v0, 31				
+	li	$a0, 67				
+	li	$a1, 300			
+	li	$a2, 12				
+	li	$a3, 127			
+	syscall
+	
+	li	$v0, 32
+	li	$a0, 150
+	syscall
+	
+	li 	$v0, 31				
+	li	$a0, 72				
+	li	$a1, 400			
+	li	$a2, 12				
+	li	$a3, 127			
+	syscall
+	
+	lw	$t9, 0($sp)
+	lw 	$ra, 4($sp)
+	lw	$v0, 8($sp)
+	lw	$a0, 12($sp)
+	lw	$a1, 16($sp)
+	lw	$a2, 20($sp)
+	lw	$a3, 24($sp)
+	addi 	$sp,$sp,24
+	
+	jr 	$ra
+	
+_endSound:
+	addi 	$sp,$sp, -24
+	sw	$t9, 0($sp)
+	sw 	$ra, 4($sp)
+	sw	$v0, 8($sp)
+	sw	$a0, 12($sp)
+	sw	$a1, 16($sp)
+	sw	$a2, 20($sp)
+	sw	$a3, 24($sp)
+
+	li 	$v0, 33
+	
+	li 	$a0, 60	# pitch, C#
+	li 	$a1, 600	#duration in milisecond
+	li 	$a2, 111	#instrument (0 - 7 piano)
+	li 	$a3, 100	#volume
+	syscall
+	li 	$v0, 32
+	li	$a0, 50
+	syscall		
+	li 	$v0, 33
+	li 	$a0, 60	# pitch, C#
+	li 	$a1, 600	#duration in milisecond
+	li 	$a2, 111	#instrument (0 - 7 piano)
+	li 	$a3, 100	#volume
+	syscall
+	li 	$v0, 32
+	li	$a0, 50
+	syscall	
+	li 	$v0, 33
+	li 	$a0, 60	# pitch, C#
+	li 	$a1, 600	#duration in milisecond
+	li 	$a2, 111	#instrument (0 - 7 piano)
+	li 	$a3, 100	#volume
+	syscall
+	
+	
+	lw	$t9, 0($sp)
+	lw 	$ra, 4($sp)
+	lw	$v0, 8($sp)
+	lw	$a0, 12($sp)
+	lw	$a1, 16($sp)
+	lw	$a2, 20($sp)
+	lw	$a3, 24($sp)
+	addi 	$sp,$sp,24
+	
+	jr 	$ra
+_delaySleep:
+	addi 	$sp,$sp, -12
+	sw	$t9, 0($sp)
+	sw 	$ra, 4($sp)
+	sw	$v0, 8($sp)
+	sw	$a0, 12($sp)
+
+	li 	$v0, 32
+	li	$a0, 2000
+	syscall	
+		
+	lw	$t9, 0($sp)
+	lw 	$ra, 4($sp)
+	lw	$v0, 8($sp)
+	lw	$a0, 12($sp)
+	addi 	$sp,$sp, 12
+	
+	jr 	$ra	
+######################################################################################################
 
 # ==================== _stop_runing ============================================================ #
 ######################################################################################################
 # == _stop_runing -------------------------------------------------
 #	- Use for:	Exit program
 _stop_runing:
+
+
 	# Ket thuc 
 	li	$v0,10
 	syscall
